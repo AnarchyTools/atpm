@@ -12,36 +12,21 @@
 ;; See the License for the specific language governing permissions and
 ;; limitations under the License.
 
-;; The build file for all of the targets of the Anarchy Tools package manager.
-
 (package
-  :name "atpm"
-  :import ["atpkg/build.atpkg"]
+  :name "test"
 
-  :configurations {
-        :bootstrap {
-             :osx {
-                :atpm {
-                  :bootstrapOnly true
-                  :llbuildyaml "bootstrap/bootstrap-macosx.swift-build"
-                }
-             }
-             :linux {
-                :atpm {
-                  :bootstrapOnly true
-                  :llbuildyaml "bootstrap/bootstrap-linux.swift-build"
-                  :swiftCPath "/usr/local/bin/swiftc"
-                  :linkSDK false
-                }
-             }
-        }
-  }
+  :externals [
+    {
+      :url "https://github.com/AnarchyTools/atpkg.git"
+      :branch "master"
+    }
+  ]
 
   :tasks {
           :default {
             :tool "atllbuild"
-            :source ["atpm/src/**.swift"]
-            :name "atpm"
+            :source ["src/**.swift"]
+            :name "test"
             :outputType "executable"
             :linkWithProduct ["atpkg.a"]
             :dependencies ["atpkg.atpkg"]
@@ -50,7 +35,7 @@
           :check {
             :tool "shell"
             :script "./tests/test.sh"
-            :dependencies ["default"]
+            :dependencies ["atpm"]
           }
   }
 
