@@ -64,10 +64,11 @@ To configure a dependency in a `build.atpkg` file add the following statements t
 
 - `:url` is required and a valid URL to a git repository
 - `:branch` is optional and defines which branch to check out
+- `:tag` is optional and defines which git tag to check out
 - `:commit` defines a commit id
-- `:version` defines a version (git tag!), use a string like `<1.3, >=1.2` (not implemented yet)
+- `:version` defines a version, use a vector like `["<1.3" ">=1.2"]`
 
-You need one of `:branch`, `:commit` or `:version`
+You need one of `:branch`, `:tag`, `:commit` or `:version`
 
 # Usage in `build.atpkg`
 
@@ -93,7 +94,7 @@ Example:
         :name "test"
         :outputType "executable"
         :linkWithProduct ["atpkg.a"]
-        :dependencies ["externals.atpkg.atpkg"]
+        :dependencies ["atpkg.atpkg"]
     }
   }
 )
