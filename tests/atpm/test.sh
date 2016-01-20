@@ -41,30 +41,36 @@ popd
 # Recursive dependency fetcher
 #
 
-# pushd "$DIR/recursive"
+pushd "$DIR/recursive"
 
-# echo "*** Package info ***"
-# $ATPM info
-# if [ $? -ne 0 ] ; then
-#     echo "Test failed!"
-#     exit 1
-# fi
+echo "*** Package info ***"
+$ATPM info
+if [ $? -ne 0 ] ; then
+    echo "Test failed!"
+    exit 1
+fi
 
-# echo "*** Fetch deps recursive***"
-# $ATPM fetch
-# if [ $? -ne 0 ] ; then
-#     echo "Test failed!"
-#     exit 1
-# fi
+echo "*** Fetch deps recursive***"
+$ATPM fetch
+if [ $? -ne 0 ] ; then
+    echo "Test failed!"
+    exit 1
+fi
 
-# echo "*** Update deps recursive ***"
-# $ATPM update
-# if [ $? -ne 0 ] ; then
-#     echo "Test failed!"
-#     exit 1
-# fi
+$ATPM info
+if [ $? -ne 0 ] ; then
+    echo "Test failed!"
+    exit 1
+fi
 
-# rm -rf external
-# popd
+echo "*** Update deps recursive ***"
+$ATPM update
+if [ $? -ne 0 ] ; then
+    echo "Test failed!"
+    exit 1
+fi
+
+rm -rf external
+popd
 
 echo "***ATPM TEST SCRIPT PASSED SUCCESSFULLY*****"

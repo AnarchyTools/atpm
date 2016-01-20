@@ -17,7 +17,7 @@
 
   :externals [
     {
-      :url "https://github.com/AnarchyTools/dummyPackageB.git"
+      :url "https://github.com/AnarchyTools/dummyPackageA.git"
       :branch "master"
     }
   ]
@@ -28,8 +28,8 @@
       :source ["src/**.swift"]
       :name "test"
       :outputType "executable"
-      :linkWithProduct ["dummyPackageB.a"]
-      :dependencies ["dummyPackageB.default"]
+      :linkWithProduct ["dummyPackageA.a"]
+      :dependencies ["dummyPackageA.default"]
     }
   }
 )
