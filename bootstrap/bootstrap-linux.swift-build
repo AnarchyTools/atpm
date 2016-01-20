@@ -1,0 +1,26 @@
+client:
+  name: swift-build
+
+tools: {}
+
+targets:
+  "": [<atllbuild>]
+  atllbuild: [<atllbuild>]
+commands:
+  <atllbuild-swiftc>:
+     tool: swift-compiler
+     executable: "/usr/local/bin/swiftc"
+     inputs: ["atpm/src/main.swift"]
+     sources: ["atpm/src/main.swift"]
+     objects: [".atllbuild/objects/main.swift.o"]
+     outputs: ["<atllbuild-swiftc>", ".atllbuild/objects/main.swift.o"]
+     module-name: atpm
+     module-output-path: .atllbuild/products/atpm.swiftmodule
+     temps-path: .atllbuild//llbuildtmp
+     other-args: ["-j8", "-D", "ATBUILD", "-I", ".atllbuild/products/"]
+  <atllbuild>:
+    tool: shell
+    inputs: ["<atllbuild-swiftc>", ".atllbuild/objects/main.swift.o", ".atllbuild/products/atpkg.a"]
+    outputs: ["<atllbuild>", ".atllbuild/products/atpm"]
+    args: ["/usr/local/bin/swiftc", "-o", ".atllbuild/products/atpm", ".atllbuild/objects/main.swift.o", ".atllbuild/products/atpkg.a"]
+    description: Linking executable .atllbuild/products/atpm

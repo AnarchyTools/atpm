@@ -18,25 +18,6 @@
   :name "atpm"
   :import ["atpkg/build.atpkg"]
 
-  :configurations {
-        :bootstrap {
-             :osx {
-                :atpm {
-                  :bootstrapOnly true
-                  :llbuildyaml "bootstrap/bootstrap-macosx.swift-build"
-                }
-             }
-             :linux {
-                :atpm {
-                  :bootstrapOnly true
-                  :llbuildyaml "bootstrap/bootstrap-linux.swift-build"
-                  :swiftCPath "/usr/local/bin/swiftc"
-                  :linkSDK false
-                }
-             }
-        }
-  }
-
   :tasks {
           :default {
             :tool "atllbuild"
@@ -45,6 +26,19 @@
             :outputType "executable"
             :linkWithProduct ["atpkg.a"]
             :dependencies ["atpkg.atpkg"]
+
+            :overlays {
+              :bootstrap-osx {
+                :bootstrapOnly true
+                :llbuildyaml "bootstrap/bootstrap-macosx.swift-build"
+              }
+              :bootstrap-linux {
+                :bootstrapOnly true
+                :swiftCPath "/usr/local/bin/swiftc"
+                :linkSDK false
+                :llbuildyaml "bootstrap/bootstrap-linux.swift-build"
+              }
+            }
           }
 
           :check {
