@@ -17,7 +17,7 @@
 
   :externals [
     {
-      :url "https://github.com/AnarchyTools/atpkg.git"
+      :url "https://github.com/AnarchyTools/atbuild.git"
       :branch "master"
     }
   ]
@@ -29,13 +29,13 @@
             :name "test"
             :outputType "executable"
             :linkWithProduct ["atpkg.a"]
-            :dependencies ["atpkg.atpkg"]
+            :dependencies ["atbuild.atpkg"]
           }
 
           :check {
             :tool "shell"
             :script "./tests/test.sh"
-            :dependencies ["atpm"]
+            :dependencies ["default"]
           }
   }
 

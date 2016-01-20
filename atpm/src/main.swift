@@ -16,6 +16,7 @@ let version = "0.1.0-dev"
 
 import Foundation
 import atpkg
+import atpm_tools
 
 #if os(Linux)
 //we need to get exit somehow
@@ -43,19 +44,50 @@ func loadPackageFile() -> Package {
     return package
 }
 
+func fetchVersions(pkg: ExternalDependency) -> [Version] {
+    let fp = popen("cd external/\(pkg.name) && git tag -l *.*.* -l *.* -l v*.*.* -l v*.*", "r")
+    guard fp != nil else {
+        return []
+    }
+    defer {
+        fclose(fp)
+    }
+    
+    var versions = [Version]()
+    var buffer = [CChar](count: 255, repeatedValue: 0)
+    while feof(fp) == 0 {
+        if fgets(&buffer, 255, fp) == nil {
+            break
+        }
+        if let versionString = String.fromCString(buffer) {
+            versions.append(Version(string: versionString))
+        }
+    }
+    return versions
+}
+
 func updateDependency(pkg: ExternalDependency) -> Bool {
     let fm = NSFileManager.defaultManager()
     if !fm.fileExistsAtPath("external/\(pkg.name)") {
         return false
     }
 
+    if system("cd external/\(pkg.name) && git fetch origin") != 0 {
+        return false
+    }
+    
+    let versions = fetchVersions(pkg)
+    print(versions)
+
     switch pkg.version {
     case .Branch(let branch):
-        return system("cd external/\(pkg.name) && git checkout \(branch)") == 0
+        return system("cd external/\(pkg.name) && git checkout \(branch) && git pull origin") == 0
     case .Commit(let commitID):
         return system("cd external/\(pkg.name) && git checkout \(commitID)") == 0
     case .Version(let major, let minor):
         // fetch all tags
+//        let versions = fetchVersions(pkg)
+//        print(versions)
         print("Not implemented yet")
         return false
     }
@@ -74,7 +106,7 @@ func fetchDependency(pkg: ExternalDependency) -> Bool {
         return false
     }
     
-    let cloneResult = system("git clone \(pkg.gitURL) external/\(pkg.name)")
+    let cloneResult = system("git clone --recurse-submodules \(pkg.gitURL) external/\(pkg.name)")
     if cloneResult != 0 {
         return false
     }

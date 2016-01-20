@@ -20,12 +20,38 @@
 
   :tasks {
           :default {
+            :tool "nop"
+            :dependencies ["atpm" "build-tests" "run-tests"]
+          }
+
+          :atpmtools {
+            :tool "atllbuild"
+            :source ["atpm_tools/**.swift"]
+            :name "atpm_tools"
+            :outputType "static-library"
+            :compileOptions ["-enable-testing"]
+            
+            :overlays {
+              :bootstrap-osx {
+                :bootstrapOnly true
+                :llbuildyaml "bootstrap/bootstrap-macosx-atpm_tools.swift-build"
+              }
+              :bootstrap-linux {
+                :bootstrapOnly true
+                :swiftCPath "/usr/local/bin/swiftc"
+                :linkSDK false
+                :llbuildyaml "bootstrap/bootstrap-linux-atpm_tools.swift-build"
+              }
+            }
+          }
+
+          :atpm {
             :tool "atllbuild"
             :source ["atpm/src/**.swift"]
             :name "atpm"
             :outputType "executable"
-            :linkWithProduct ["atpkg.a"]
-            :dependencies ["atpkg.atpkg"]
+            :linkWithProduct ["atpkg.a" "atpm_tools.a"]
+            :dependencies ["atpkg.atpkg" "atpmtools"]
 
             :overlays {
               :bootstrap-osx {
@@ -43,8 +69,25 @@
 
           :check {
             :tool "shell"
-            :script "./tests/test.sh"
+            :script "./tests/atpm/test.sh"
             :dependencies ["default"]
+          }
+
+          :build-tests {
+            :tool "atllbuild"
+            :source ["tests/atpm_tools/**.swift"]
+            :outputType "executable"
+            :name "tests"
+            :dependencies ["atpmtools"]
+            :xctestify true
+            :xctestStrict true
+            :linkWithProduct["atpm_tools.a"]
+          }
+
+          :run-tests {
+            :tool "xctestrun"
+            :testExecutable ".atllbuild/products/tests"
+            :dependencies ["build-tests"]
           }
   }
 
