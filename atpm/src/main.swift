@@ -35,6 +35,8 @@ func loadPackageFile() -> Package {
     return package
 }
 
+// MARK: - Git stuff
+
 func fetchVersions(pkg: ExternalDependency) -> [Version] {
     let fp = popen("cd external/\(pkg.name) && git tag -l *.*.* -l *.* -l v*.*.* -l v*.*", "r")
     guard fp != nil else {
@@ -165,6 +167,64 @@ func fetchDependency(pkg: ExternalDependency) -> Bool {
     return updateDependency(pkg)
 }
 
+// MARK: - Command handling
+
+func info(package: Package, indent: Int = 4) -> Bool {
+    for dep in package.externals {
+        var out = ""
+        for _ in 0..<indent {
+            out += " "
+        }
+        out += "- \(dep.gitURL)"
+        print(out)
+        
+        let subPackagePath = "external/\(dep.name)/build.atpkg"
+        guard let subPackage = Package(filepath: subPackagePath, overlay: []) else {
+            continue
+        }
+        info(subPackage, indent: indent + 4)
+    }
+    return true
+}
+
+func fetch(package: Package) -> Bool {
+    for pkg in package.externals {
+        print("Fetching external dependency \(pkg.name)...")
+        if fetchDependency(pkg) {
+            symlink("..", "external/\(pkg.name)/external")
+            let subPackagePath = "external/\(pkg.name)/build.atpkg"
+            guard let subPackage = Package(filepath: subPackagePath, overlay: []) else {
+                print("Unable to load build file: \(subPackagePath)")
+                continue
+            }
+            fetch(subPackage)
+        } else {
+            print("ERROR: Could not fetch \(pkg.name)")
+            exit(1)
+        }
+    }
+    return true
+}
+
+func update(package: Package) -> Bool {
+    for pkg in package.externals {
+        print("Updating external dependency \(pkg.name)...")
+        if updateDependency(pkg) {
+            symlink("..", "external/\(pkg.name)/external")
+            let subPackagePath = "external/\(pkg.name)/build.atpkg"
+            guard let subPackage = Package(filepath: subPackagePath, overlay: []) else {
+                print("Unable to load build file: \(subPackagePath)")
+                continue
+            }
+            update(subPackage)
+        } else {
+            print("ERROR: Could not fetch \(pkg.name)")
+            return false
+        }
+    }
+    return true
+}
+
 func help() {
     print("atpm - Anarchy Tools Package Manager \(version)")
     print("https://github.com/AnarchyTools")
@@ -180,33 +240,24 @@ if Process.arguments.contains("--help") {
     exit(0)
 }
 
+// MARK: - Argument handling
+
 let package = loadPackageFile()
 
 switch Process.arguments[1] {
 case "info":
     print("Dependencies:")
-    for dep in package.externals {
-        print("    \(dep.gitURL)")
+    if info(package) {
+        exit(0)
     }
-    exit(0)
 case "fetch":
-    for pkg in package.externals {
-        print("Fetching external dependency \(pkg.name)...")
-        if fetchDependency(pkg) != true {
-            print("ERROR: Could not fetch \(pkg.name)")
-            exit(1)
-        }
+    if fetch(package) {
+        exit(0)
     }
-    exit(0)
 case "update":
-    for pkg in package.externals {
-        print("Updating external dependency \(pkg.name)...")
-        if updateDependency(pkg) != true {
-            print("ERROR: Could not fetch \(pkg.name)")
-            exit(1)
-        }
+    if update(package) {
+        exit(0)
     }
-    exit(0)
 case "add":
     print("not implemented")
 case "install":
