@@ -133,6 +133,8 @@ public func < (lhs: Version, rhs: Version) -> Bool {
             } else if lhs.patch == rhs.patch {
                 if rhs.ext.characters.count == 0 && lhs.ext.characters.count > 0 {
                     return true
+                } else if lhs.ext == rhs.ext {
+                    return false
                 } else {
                     return [lhs.ext, rhs.ext].sort()[0] == lhs.ext
                 }
@@ -158,6 +160,8 @@ public func > (lhs: Version, rhs: Version) -> Bool {
             } else if lhs.patch == rhs.patch {
                 if lhs.ext.characters.count == 0 && rhs.ext.characters.count > 0 {
                     return true
+                } else if lhs.ext == rhs.ext {
+                    return false
                 } else {
                     return [lhs.ext, rhs.ext].sort()[0] == rhs.ext
                 }

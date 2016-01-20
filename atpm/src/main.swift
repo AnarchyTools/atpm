@@ -27,16 +27,7 @@ import Glibc
 let defaultBuildFile = "build.atpkg"
 
 func loadPackageFile() -> Package {
-
-    //build overlays
-    var overlays : [String] = []
-    for (i, x) in Process.arguments.enumerate() {
-        if x == "--overlay" {
-            let overlay = Process.arguments[i+1]
-            overlays.append(overlay)
-        }
-    }
-    guard let package = Package(filepath: defaultBuildFile, overlay: overlays) else {
+    guard let package = Package(filepath: defaultBuildFile, overlay: []) else {
         print("Unable to load build file: \(defaultBuildFile)")
         exit(1)
     }
@@ -76,19 +67,79 @@ func updateDependency(pkg: ExternalDependency) -> Bool {
         return false
     }
     
-    let versions = fetchVersions(pkg)
-    print(versions)
-
     switch pkg.version {
     case .Branch(let branch):
         return system("cd external/\(pkg.name) && git checkout \(branch) && git pull origin") == 0
+    case .Tag(let tag):
+        return system("cd external/\(pkg.name) && git checkout \(tag)") == 0
     case .Commit(let commitID):
         return system("cd external/\(pkg.name) && git checkout \(commitID)") == 0
-    case .Version(let major, let minor):
-        // fetch all tags
-//        let versions = fetchVersions(pkg)
-//        print(versions)
-        print("Not implemented yet")
+    case .Version(let version):
+        var min: Version? = nil
+        var max: Version? = nil
+        
+        var minEquals = true
+        var maxEquals = true
+        for ver in version {
+            if ver.hasPrefix(">=") {
+                min = Version(string: ver.substringFromIndex(ver.startIndex.advancedBy(2)))
+            } else if ver.hasPrefix(">") {
+                min = Version(string: ver.substringFromIndex(ver.startIndex.advancedBy(1)))
+                minEquals = false
+            } else if ver.hasPrefix("<=") {
+                max = Version(string: ver.substringFromIndex(ver.startIndex.advancedBy(2)))
+            } else if ver.hasPrefix("<") {
+                max = Version(string: ver.substringFromIndex(ver.startIndex.advancedBy(1)))
+                maxEquals = false
+            } else if ver.hasPrefix("==") {
+                max = Version(string: ver.substringFromIndex(ver.startIndex.advancedBy(2)))
+                min = max
+            } else {
+                max = Version(string: ver)
+                min = max
+            }
+        }
+        var versions = fetchVersions(pkg)
+        
+        do {
+            versions = try versions.filter { version throws -> Bool in
+                var valid = true
+                if let min = min {
+                    if minEquals {
+                        valid = (version >= min)
+                    } else {
+                        valid = (version > min)
+                    }
+                }
+                
+                if !valid {
+                    return false
+                }
+
+                if let max = max {
+                    if maxEquals {
+                        valid = (version <= max)
+                    } else {
+                        valid = (version < max)
+                    }
+                }
+                
+                return valid
+            }
+
+            versions.sortInPlace { (v1, v2) -> Bool in
+                return v1 < v2
+            }
+            
+            if versions.count > 0 {
+                print("Valid versions: \(versions), using \(versions.last!)")
+                return system("cd external/\(pkg.name) && git checkout \(versions.last!)") == 0
+            } else {
+                print("No valid versions for \(pkg.name)!")
+            }
+        } catch {
+            return false
+        }
         return false
     }
 }
