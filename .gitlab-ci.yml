@@ -1,0 +1,34 @@
+stages:
+- build
+
+variables:
+    docker_tag: "atpm"
+    cli_executable: "atpm"
+
+before_script: 
+    - git submodule update --init --recursive
+linux:
+    stage: build
+    script:
+        - docker build -t $docker_tag .
+        - id=$(docker create $docker_tag)
+        - mkdir bin
+        - docker cp $id:$docker_tag/.atllbuild/products/$cli-executable bin/$cli_executable
+        - docker rm -v $id
+        - docker rmi $docker_tag
+    tags:
+        - docker
+    artifacts:
+        paths:
+            - bin
+
+osx:
+    stage: build
+    script: 
+        - export PATH=/Library/Developer/Toolchains/swift-latest.xctoolchain/usr/bin:"${PATH}"
+        - atbuild check
+    tags:
+        - openswift
+    artifacts:
+        paths:
+            - .atllbuild/products/$cli_executable
