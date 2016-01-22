@@ -25,6 +25,9 @@ public class Version {
     public var patch: Int
     public var ext: String
     
+    public var outputMinor: Bool = false
+    public var outputPatch: Bool = false
+    
     private enum ParserState {
     case Major
     case Minor
@@ -48,8 +51,10 @@ public class Version {
             case .Major:
                 state = self.parseMajor(c)
             case .Minor:
+                self.outputMinor = true
                 state = self.parseMinor(c)
             case .Patch:
+                self.outputPatch = true
                 state = self.parsePatch(c)
             case .Ext:
                 state = self.parseExt(c)
@@ -190,7 +195,17 @@ extension Version: Hashable {
 
 extension Version: CustomStringConvertible {
     public var description: String {
-        return "\(self.major).\(self.minor).\(self.patch)\(self.ext)"
+        var v = "\(self.major)"
+        if self.outputMinor {
+            v += ".\(self.minor)"
+            if self.outputPatch {
+                v += ".\(self.patch)"
+            }
+        }
+        if self.ext.characters.count > 0 {
+            v += "\(self.ext)"
+        }
+        return v
     }
 }
 

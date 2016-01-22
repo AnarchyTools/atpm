@@ -140,11 +140,11 @@ class VersionTests: XCTestCase {
     }
     func testStringConvertible2() {
     	let v = Version(string: "1.2rc1")
-        XCTAssert("\(v)" == "1.2.0rc1")
+        XCTAssert("\(v)" == "1.2rc1")
     }
     func testStringConvertible3() {
     	let v = Version(string: "1.2")
-        XCTAssert("\(v)" == "1.2.0")
+        XCTAssert("\(v)" == "1.2")
     }
 
 }
