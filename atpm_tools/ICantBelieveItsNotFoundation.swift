@@ -16,13 +16,6 @@ import Foundation
 
 //SR-138
 extension String {
-    var toNSString: NSString {
-        #if os(Linux)
-        return self.bridge()
-        #elseif os(OSX)
-        return (self as NSString)
-        #endif
-    }
     #if os(Linux)
     public func subStringWithRange(range: Range<String.Index>) -> String {
         var result = ""
@@ -33,18 +26,9 @@ extension String {
         return result
     }
     
-    public func substringFromIndex(index: Int) -> String {
-        return self.subStringWithRange(self.startIndex.advancedBy(index)..<self.endIndex)
+    public func substringFromIndex(index: String.Index) -> String {
+        return self.subStringWithRange(index..<self.endIndex)
     }
     #endif
-}
-extension NSString {
-    var toString: String {
-        #if os(Linux)
-        return self.bridge()
-        #elseif os(OSX)
-        return (self as String)
-        #endif
-    }
 }
 
