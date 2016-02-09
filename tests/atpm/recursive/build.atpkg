@@ -15,7 +15,7 @@
 (package
   :name "test"
 
-  :externals [
+  :external-packages [
     {
       :url "https://github.com/AnarchyTools/dummyPackageA.git"
       :branch "master"
@@ -25,10 +25,10 @@
   :tasks {
     :default {
       :tool "atllbuild"
-      :source ["src/**.swift"]
+      :sources ["src/**.swift"]
       :name "test"
-      :outputType "executable"
-      :linkWithProduct ["dummyPackageA.a"]
+      :output-type "executable"
+      :link-with ["dummyPackageA.a"]
       :dependencies ["dummyPackageA.default"]
     }
   }

@@ -16,79 +16,78 @@
 
 (package
   :name "atpm"
-  :import ["atpkg/build.atpkg"]
+  :import-packages ["atpkg/build.atpkg"]
 
-  :tasks {
-          :default {
-            :tool "nop"
-            :dependencies ["atpm" "build-tests" "run-tests"]
-          }
+    :tasks {
+      :default {
+      :tool "nop"
+      :dependencies ["atpm" "build-tests" "run-tests"]
+    }
 
-          :atpmtools {
-            :tool "atllbuild"
-            :source ["atpm_tools/**.swift"]
-            :name "atpm_tools"
-            :outputType "static-library"
-            :compileOptions ["-enable-testing"]
-            
-            :overlays {
-              :bootstrap-osx {
-                :bootstrapOnly true
-                :llbuildyaml "bootstrap/bootstrap-macosx-atpm_tools.swift-build"
-              }
-              :bootstrap-linux {
-                :bootstrapOnly true
-                :swiftCPath "/usr/local/bin/swiftc"
-                :linkSDK false
-                :llbuildyaml "bootstrap/bootstrap-linux-atpm_tools.swift-build"
-              }
-            }
-          }
+    :atpmtools {
+      :tool "atllbuild"
+      :sources ["atpm_tools/**.swift"]
+      :name "atpm_tools"
+      :output-type "static-library"
+      :compile-options ["-enable-testing"]
 
-          :atpm {
-            :tool "atllbuild"
-            :source ["atpm/src/**.swift"]
-            :name "atpm"
-            :outputType "executable"
-            :linkWithProduct ["atpkg.a" "atpm_tools.a"]
-            :dependencies ["atpkg.atpkg" "atpmtools"]
+      :overlays {
+        :bootstrap-osx {
+          :bootstrap-only true
+          :llbuildyaml "bootstrap/bootstrap-macosx-atpm_tools.swift-build"
+        }
+        :bootstrap-linux {
+          :bootstrap-only true
+          :swiftc-path "/usr/local/bin/swiftc"
+          :link-sdk false
+          :llbuildyaml "bootstrap/bootstrap-linux-atpm_tools.swift-build"
+        }
+      }
+    }
 
-            :overlays {
-              :bootstrap-osx {
-                :bootstrapOnly true
-                :llbuildyaml "bootstrap/bootstrap-macosx.swift-build"
-              }
-              :bootstrap-linux {
-                :bootstrapOnly true
-                :swiftCPath "/usr/local/bin/swiftc"
-                :linkSDK false
-                :llbuildyaml "bootstrap/bootstrap-linux.swift-build"
-              }
-            }
-          }
+    :atpm {
+      :tool "atllbuild"
+      :sources ["atpm/src/**.swift"]
+      :name "atpm"
+      :output-type "executable"
+      :link-with ["atpkg.a" "atpm_tools.a"]
+      :dependencies ["atpkg.atpkg" "atpmtools"]
 
-          :check {
-            :tool "shell"
-            :script "./tests/atpm/test.sh"
-            :dependencies ["default"]
-          }
+      :overlays {
+        :bootstrap-osx {
+          :bootstrap-only true
+          :llbuildyaml "bootstrap/bootstrap-macosx.swift-build"
+        }
+        :bootstrap-linux {
+          :bootstrap-only true
+          :swiftc-path "/usr/local/bin/swiftc"
+          :link-sdk false
+          :llbuildyaml "bootstrap/bootstrap-linux.swift-build"
+        }
+      }
+    }
 
-          :build-tests {
-            :tool "atllbuild"
-            :source ["tests/atpm_tools/**.swift"]
-            :outputType "executable"
-            :name "tests"
-            :dependencies ["atpmtools"]
-            :xctestify true
-            :xctestStrict true
-            :linkWithProduct["atpm_tools.a"]
-          }
+    :check {
+      :tool "shell"
+      :script "./tests/atpm/test.sh"
+      :dependencies ["default"]
+    }
 
-          :run-tests {
-            :tool "xctestrun"
-            :testExecutable ".atllbuild/products/tests"
-            :dependencies ["build-tests"]
-          }
+    :build-tests {
+      :tool "atllbuild"
+      :sources ["tests/atpm_tools/**.swift"]
+      :output-type "executable"
+      :name "tests"
+      :dependencies ["atpmtools"]
+      :xctestify true
+      :xctestStrict true
+      :link-with ["atpm_tools.a"]
+    }
+
+    :run-tests {
+      :tool "xctestrun"
+      :testExecutable ".atllbuild/products/tests"
+      :dependencies ["build-tests"]
+    }
   }
-
 )

@@ -27,12 +27,12 @@ import Glibc
 let defaultBuildFile = "build.atpkg"
 
 func loadPackageFile() -> Package {
-    guard let package = Package(filepath: defaultBuildFile, overlay: []) else {
-        print("Unable to load build file: \(defaultBuildFile)")
+    do {
+        return try Package(filepath: defaultBuildFile, overlay: [])
+    } catch {
+        print("Unable to load build file '\(defaultBuildFile)': \(error)")
         exit(1)
     }
-
-    return package
 }
 
 // MARK: - Git stuff
@@ -45,7 +45,7 @@ func fetchVersions(pkg: ExternalDependency) -> [Version] {
     defer {
         fclose(fp)
     }
-    
+
     var versions = [Version]()
     var buffer = [CChar](count: 255, repeatedValue: 0)
     while feof(fp) == 0 {
@@ -68,7 +68,7 @@ func updateDependency(pkg: ExternalDependency) -> Bool {
     if system("cd external/\(pkg.name) && git fetch origin") != 0 {
         return false
     }
-    
+
     switch pkg.version {
     case .Branch(let branch):
         return system("cd external/\(pkg.name) && git checkout \(branch) && git pull origin") == 0
@@ -79,7 +79,7 @@ func updateDependency(pkg: ExternalDependency) -> Bool {
     case .Version(let version):
         var min: Version? = nil
         var max: Version? = nil
-        
+
         var minEquals = true
         var maxEquals = true
         for ver in version {
@@ -102,7 +102,7 @@ func updateDependency(pkg: ExternalDependency) -> Bool {
             }
         }
         var versions = fetchVersions(pkg)
-        
+
         do {
             versions = try versions.filter { version throws -> Bool in
                 var valid = true
@@ -113,7 +113,7 @@ func updateDependency(pkg: ExternalDependency) -> Bool {
                         valid = (version > min)
                     }
                 }
-                
+
                 if !valid {
                     return false
                 }
@@ -125,14 +125,14 @@ func updateDependency(pkg: ExternalDependency) -> Bool {
                         valid = (version < max)
                     }
                 }
-                
+
                 return valid
             }
 
             versions.sortInPlace { (v1, v2) -> Bool in
                 return v1 < v2
             }
-            
+
             if versions.count > 0 {
                 print("Valid versions: \(versions), using \(versions.last!)")
                 return system("cd external/\(pkg.name) && git checkout \(versions.last!)") == 0
@@ -152,18 +152,18 @@ func fetchDependency(pkg: ExternalDependency) -> Bool {
         print("Already downloaded")
         return true
     }
-    
+
     do {
         try fm.createDirectoryAtPath("external", withIntermediateDirectories: true, attributes: nil)
     } catch {
         return false
     }
-    
+
     let cloneResult = system("git clone --recurse-submodules \(pkg.gitURL) external/\(pkg.name)")
     if cloneResult != 0 {
         return false
     }
-    
+
     return updateDependency(pkg)
 }
 
@@ -177,12 +177,19 @@ func info(package: Package, indent: Int = 4) -> Bool {
         }
         out += "- \(dep.gitURL)"
         print(out)
-        
+
         let subPackagePath = "external/\(dep.name)/build.atpkg"
-        guard let subPackage = Package(filepath: subPackagePath, overlay: []) else {
-            continue
+        do {
+            let subPackage = try Package(filepath: subPackagePath, overlay: [])
+            info(subPackage, indent: indent + 4)
+        } catch {
+            out = ""
+            for _ in 0..<indent {
+                out += " "
+            }
+            out += "-> Could not load Package file: \(error)"
+            print(out)
         }
-        info(subPackage, indent: indent + 4)
     }
     return true
 }
@@ -193,11 +200,12 @@ func fetch(package: Package) -> Bool {
         if fetchDependency(pkg) {
             symlink("..", "external/\(pkg.name)/external")
             let subPackagePath = "external/\(pkg.name)/build.atpkg"
-            guard let subPackage = Package(filepath: subPackagePath, overlay: []) else {
-                print("Unable to load build file: \(subPackagePath)")
+            do {
+                fetch(try Package(filepath: subPackagePath, overlay: []))
+            } catch {
+                print("Unable to load build file '\(subPackagePath)': \(error)")
                 continue
             }
-            fetch(subPackage)
         } else {
             print("ERROR: Could not fetch \(pkg.name)")
             exit(1)
@@ -212,11 +220,11 @@ func update(package: Package) -> Bool {
         if updateDependency(pkg) {
             symlink("..", "external/\(pkg.name)/external")
             let subPackagePath = "external/\(pkg.name)/build.atpkg"
-            guard let subPackage = Package(filepath: subPackagePath, overlay: []) else {
-                print("Unable to load build file: \(subPackagePath)")
-                continue
+            do {
+                update(try Package(filepath: subPackagePath, overlay: []))
+            } catch {
+                print("Unable to load build file '\(subPackagePath)': \(error)")
             }
-            update(subPackage)
         } else {
             print("ERROR: Could not fetch \(pkg.name)")
             return false

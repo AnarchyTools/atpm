@@ -15,49 +15,49 @@
 
 import XCTest
 class VersionTests: XCTestCase {
-    func testParse1() {
+    func testParse1() throws {
     	let v = Version(string: "1.2.3b1")
         XCTAssert(v.major == 1)
         XCTAssert(v.minor == 2)
         XCTAssert(v.patch == 3)
         XCTAssert(v.ext == "b1")
     }
-    func testParse2() {
+    func testParse2() throws {
     	let v = Version(string: "v1.2.3b1")
         XCTAssert(v.major == 1)
         XCTAssert(v.minor == 2)
         XCTAssert(v.patch == 3)
         XCTAssert(v.ext == "b1")
     }
-    func testParse3() {
+    func testParse3() throws {
     	let v = Version(string: "V1.2.3b1")
         XCTAssert(v.major == 1)
         XCTAssert(v.minor == 2)
         XCTAssert(v.patch == 3)
         XCTAssert(v.ext == "b1")
     }
-    func testParse4() {
+    func testParse4() throws {
     	let v = Version(string: "1.2")
         XCTAssert(v.major == 1)
         XCTAssert(v.minor == 2)
         XCTAssert(v.patch == 0)
         XCTAssert(v.ext == "")
     }
-    func testParse5() {
+    func testParse5() throws {
     	let v = Version(string: "1.2.3")
         XCTAssert(v.major == 1)
         XCTAssert(v.minor == 2)
         XCTAssert(v.patch == 3)
         XCTAssert(v.ext == "")
     }
-    func testParse6() {
+    func testParse6() throws {
     	let v = Version(string: "1.2b1")
         XCTAssert(v.major == 1)
         XCTAssert(v.minor == 2)
         XCTAssert(v.patch == 0)
         XCTAssert(v.ext == "b1")
     }
-    func testParse7() {
+    func testParse7() throws {
     	let v = Version(string: "101.299.331-hnofclbri")
         XCTAssert(v.major == 101)
         XCTAssert(v.minor == 299)
@@ -65,84 +65,84 @@ class VersionTests: XCTestCase {
         XCTAssert(v.ext == "-hnofclbri")
     }
 
-    func testEqual1() {
+    func testEqual1() throws {
     	let v1 = Version(string: "1.2")
     	let v2 = Version(string: "1.2.0")
         XCTAssert(v1 == v2)
     }
-    func testEqual2() {
+    func testEqual2() throws {
     	let v1 = Version(string: "1.2")
     	let v2 = Version(string: "1.2.1")
         XCTAssert(v1 != v2)
     }
-    func testEqual3() {
+    func testEqual3() throws {
     	let v1 = Version(string: "1.2")
     	let v2 = Version(string: "1.3")
         XCTAssert(v1 != v2)
     }
-    func testEqual4() {
+    func testEqual4() throws {
     	let v1 = Version(string: "1.2")
     	let v2 = Version(string: "2.2")
         XCTAssert(v1 != v2)
     }
-    func testEqual5() {
+    func testEqual5() throws {
     	let v1 = Version(string: "1.2")
     	let v2 = Version(string: "1.2b1")
         XCTAssert(v1 != v2)
     }
 
-    func testGreater1() {
+    func testGreater1() throws {
     	let v1 = Version(string: "1.2")
     	let v2 = Version(string: "1.2.1")
         XCTAssert(v2 > v1)
     }
-    func testGreater2() {
+    func testGreater2() throws {
     	let v1 = Version(string: "1.2")
     	let v2 = Version(string: "1.3")
         XCTAssert(v2 > v1)
     }
-    func testGreater3() {
+    func testGreater3() throws {
     	let v1 = Version(string: "1.2")
     	let v2 = Version(string: "2.2")
         XCTAssert(v2 > v1)
     }
-    func testGreater4() {
+    func testGreater4() throws {
     	let v1 = Version(string: "1.2rc1")
     	let v2 = Version(string: "1.2")
         XCTAssert(v2 > v1)
     }
 
 
-    func testSmaller1() {
+    func testSmaller1() throws {
     	let v1 = Version(string: "1.2")
     	let v2 = Version(string: "1.2.1")
         XCTAssert(v1 < v2)
     }
-    func testSmaller2() {
+    func testSmaller2() throws {
     	let v1 = Version(string: "1.2")
     	let v2 = Version(string: "1.3")
         XCTAssert(v1 < v2)
     }
-    func testSmaller3() {
+    func testSmaller3() throws {
     	let v1 = Version(string: "1.2")
     	let v2 = Version(string: "2.2")
         XCTAssert(v1 < v2)
     }
-    func testSmaller4() {
+    func testSmaller4() throws {
     	let v1 = Version(string: "1.2rc1")
     	let v2 = Version(string: "1.2")
         XCTAssert(v1 < v2)
     }
 
-    func testStringConvertible1() {
+    func testStringConvertible1() throws {
     	let v = Version(string: "1.2.3rc1")
         XCTAssert("\(v)" == "1.2.3rc1")
     }
-    func testStringConvertible2() {
+    func testStringConvertible2() throws {
     	let v = Version(string: "1.2rc1")
         XCTAssert("\(v)" == "1.2rc1")
     }
-    func testStringConvertible3() {
+    func testStringConvertible3() throws {
     	let v = Version(string: "1.2")
         XCTAssert("\(v)" == "1.2")
     }
@@ -150,7 +150,7 @@ class VersionTests: XCTestCase {
 }
 
 extension VersionTests: XCTestCaseProvider {
-    var allTests : [(String, () -> Void)] {
+    var allTests : [(String, () throws -> Void)] {
         return [
             ("testParse1", testParse1),
             ("testParse2", testParse2),
