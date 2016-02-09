@@ -80,7 +80,7 @@
       :name "tests"
       :dependencies ["atpmtools"]
       :xctestify true
-      :xctestStrict true
+      :xctest-strict true
       :link-with ["atpm_tools.a"]
     }
 
