@@ -86,7 +86,7 @@
 
     :run-tests {
       :tool "xctestrun"
-      :testExecutable ".atllbuild/products/tests"
+      :test-executable ".atllbuild/products/tests"
       :dependencies ["build-tests"]
     }
   }
