@@ -18,153 +18,25 @@ import Foundation
 import atpkg
 import atpm_tools
 
-#if os(Linux)
-//we need to get exit somehow
-//https://bugs.swift.org/browse/SR-567
-import Glibc
-#endif
-
 let defaultBuildFile = "build.atpkg"
+let defaultLockFile = "build.atlock"
 
 func loadPackageFile() -> Package {
     do {
-        return try Package(filepath: defaultBuildFile, overlay: [])
+        return try Package(filepath: defaultBuildFile, overlay: [], focusOnTask: nil)
     } catch {
         print("Unable to load build file '\(defaultBuildFile)': \(error)")
         exit(1)
     }
 }
 
-// MARK: - Git stuff
-
-func fetchVersions(pkg: ExternalDependency) -> [Version] {
-    let fp = popen("cd external/\(pkg.name) && git tag -l *.*.* -l *.* -l v*.*.* -l v*.*", "r")
-    guard fp != nil else {
-        return []
-    }
-    defer {
-        fclose(fp)
-    }
-
-    var versions = [Version]()
-    var buffer = [CChar](count: 255, repeatedValue: 0)
-    while feof(fp) == 0 {
-        if fgets(&buffer, 255, fp) == nil {
-            break
-        }
-        if let versionString = String.fromCString(buffer) {
-            versions.append(Version(string: versionString))
-        }
-    }
-    return versions
-}
-
-func updateDependency(pkg: ExternalDependency) -> Bool {
-    let fm = NSFileManager.defaultManager()
-    if !fm.fileExistsAtPath("external/\(pkg.name)") {
-        return false
-    }
-
-    if system("cd external/\(pkg.name) && git fetch origin") != 0 {
-        return false
-    }
-
-    switch pkg.version {
-    case .Branch(let branch):
-        return system("cd external/\(pkg.name) && git checkout \(branch) && git pull origin") == 0
-    case .Tag(let tag):
-        return system("cd external/\(pkg.name) && git checkout \(tag)") == 0
-    case .Commit(let commitID):
-        return system("cd external/\(pkg.name) && git checkout \(commitID)") == 0
-    case .Version(let version):
-        var min: Version? = nil
-        var max: Version? = nil
-
-        var minEquals = true
-        var maxEquals = true
-        for ver in version {
-            if ver.hasPrefix(">=") {
-                min = Version(string: ver.substringFromIndex(ver.startIndex.advancedBy(2)))
-            } else if ver.hasPrefix(">") {
-                min = Version(string: ver.substringFromIndex(ver.startIndex.advancedBy(1)))
-                minEquals = false
-            } else if ver.hasPrefix("<=") {
-                max = Version(string: ver.substringFromIndex(ver.startIndex.advancedBy(2)))
-            } else if ver.hasPrefix("<") {
-                max = Version(string: ver.substringFromIndex(ver.startIndex.advancedBy(1)))
-                maxEquals = false
-            } else if ver.hasPrefix("==") {
-                max = Version(string: ver.substringFromIndex(ver.startIndex.advancedBy(2)))
-                min = max
-            } else {
-                max = Version(string: ver)
-                min = max
-            }
-        }
-        var versions = fetchVersions(pkg)
-
-        do {
-            versions = try versions.filter { version throws -> Bool in
-                var valid = true
-                if let min = min {
-                    if minEquals {
-                        valid = (version >= min)
-                    } else {
-                        valid = (version > min)
-                    }
-                }
-
-                if !valid {
-                    return false
-                }
-
-                if let max = max {
-                    if maxEquals {
-                        valid = (version <= max)
-                    } else {
-                        valid = (version < max)
-                    }
-                }
-
-                return valid
-            }
-
-            versions.sortInPlace { (v1, v2) -> Bool in
-                return v1 < v2
-            }
-
-            if versions.count > 0 {
-                print("Valid versions: \(versions), using \(versions.last!)")
-                return system("cd external/\(pkg.name) && git checkout \(versions.last!)") == 0
-            } else {
-                print("No valid versions for \(pkg.name)!")
-            }
-        } catch {
-            return false
-        }
-        return false
-    }
-}
-
-func fetchDependency(pkg: ExternalDependency) -> Bool {
-    let fm = NSFileManager.defaultManager()
-    if fm.fileExistsAtPath("external/\(pkg.name)") {
-        print("Already downloaded")
-        return true
-    }
-
+func loadLockFile() -> LockFile? {
     do {
-        try fm.createDirectoryAtPath("external", withIntermediateDirectories: true, attributes: nil)
+        return try LockFile(filepath: defaultLockFile)
     } catch {
-        return false
+        print("Warning: No lock file loaded '\(defaultLockFile)': \(error)")
+        return nil
     }
-
-    let cloneResult = system("git clone --recurse-submodules \(pkg.gitURL) external/\(pkg.name)")
-    if cloneResult != 0 {
-        return false
-    }
-
-    return updateDependency(pkg)
 }
 
 // MARK: - Command handling
@@ -180,7 +52,7 @@ func info(package: Package, indent: Int = 4) -> Bool {
 
         let subPackagePath = "external/\(dep.name)/build.atpkg"
         do {
-            let subPackage = try Package(filepath: subPackagePath, overlay: [])
+            let subPackage = try Package(filepath: subPackagePath, overlay: [], focusOnTask: nil)
             info(subPackage, indent: indent + 4)
         } catch {
             out = ""
@@ -194,43 +66,149 @@ func info(package: Package, indent: Int = 4) -> Bool {
     return true
 }
 
-func fetch(package: Package) -> Bool {
+func fetch(package: Package, lock: LockFile?) -> [ExternalDependency] {
+    var packages = [ExternalDependency]()
+
     for pkg in package.externals {
         print("Fetching external dependency \(pkg.name)...")
-        if fetchDependency(pkg) {
+        do {
+            try fetchDependency(pkg, lock: lock?[pkg.gitURL])
+
             symlink("..", "external/\(pkg.name)/external")
             let subPackagePath = "external/\(pkg.name)/build.atpkg"
             do {
-                fetch(try Package(filepath: subPackagePath, overlay: []))
+                let p = try Package(filepath: subPackagePath, overlay: [], focusOnTask: nil)
+                packages.append(pkg)
+                packages += fetch(p, lock: lock)
             } catch {
                 print("Unable to load build file '\(subPackagePath)': \(error)")
                 continue
             }
-        } else {
-            print("ERROR: Could not fetch \(pkg.name)")
+        } catch {
+            print("ERROR: Could not fetch \(pkg.name): \(error)")
             exit(1)
         }
     }
-    return true
+    return packages
 }
 
-func update(package: Package) -> Bool {
+func update(package: Package, lock: LockFile?) -> [ExternalDependency] {
+    var packages = [ExternalDependency]()
+
     for pkg in package.externals {
         print("Updating external dependency \(pkg.name)...")
-        if updateDependency(pkg) {
+        do {
+            try updateDependency(pkg, lock: lock?[pkg.gitURL])
             symlink("..", "external/\(pkg.name)/external")
             let subPackagePath = "external/\(pkg.name)/build.atpkg"
             do {
-                update(try Package(filepath: subPackagePath, overlay: []))
+                let p = try Package(filepath: subPackagePath, overlay: [], focusOnTask: nil)
+                packages.append(pkg)
+                packages += update(p, lock: lock)
             } catch {
                 print("Unable to load build file '\(subPackagePath)': \(error)")
             }
-        } else {
-            print("ERROR: Could not fetch \(pkg.name)")
-            return false
+        } catch {
+            print("ERROR: Could not fetch \(pkg.name): \(error)")
+            return packages
         }
     }
-    return true
+    return packages
+}
+
+func pinStatus(package: Package, lock: LockFile?, name: String, pinned: Bool) -> [ExternalDependency] {
+    var packages = [ExternalDependency]()
+    let lockFile: LockFile = lock ?? LockFile()
+
+    for pkg in package.externals {
+        let subPackagePath = "external/\(pkg.name)/build.atpkg"
+        do {
+            let p = try Package(filepath: subPackagePath, overlay: [], focusOnTask: nil)
+            packages.append(pkg)
+            packages += pinStatus(p, lock: lock, name: name, pinned: pinned)
+        } catch {
+            print("Unable to load build file '\(subPackagePath)': \(error)")
+        }
+    }
+    for pkg in packages {
+        if pkg.name == name {
+            guard let usedCommitID = getCurrentCommitID(pkg) else {
+                print("ERROR: Corrupt git repository for package \(pkg.name)")
+                exit(1)
+            }
+
+            let lockedPackage = lockFile[pkg.gitURL]
+            if pinned {
+                lockFile[pkg.gitURL] = LockedPackage(url: pkg.gitURL, usedCommitID: usedCommitID, pinnedCommitID: usedCommitID, overrideURL: lockedPackage?.overrideURL)
+            } else {
+                lockFile[pkg.gitURL] = LockedPackage(url: pkg.gitURL, usedCommitID: usedCommitID, overrideURL: lockedPackage?.overrideURL)
+            }
+        }
+    }
+
+    return packages
+}
+
+func overrideURL(package: Package, lock: LockFile?, name: String, newURL: String?) -> [ExternalDependency] {
+    var packages = [ExternalDependency]()
+    let lockFile: LockFile = lock ?? LockFile()
+
+    for pkg in package.externals {
+        let subPackagePath = "external/\(pkg.name)/build.atpkg"
+        do {
+            let p = try Package(filepath: subPackagePath, overlay: [], focusOnTask: nil)
+            packages.append(pkg)
+            packages += overrideURL(p, lock: lock, name: name, newURL: newURL)
+        } catch {
+            print("Unable to load build file '\(subPackagePath)': \(error)")
+        }
+    }
+    for pkg in packages {
+        if pkg.name == name {
+            guard let usedCommitID = getCurrentCommitID(pkg) else {
+                print("ERROR: Corrupt git repository for package \(pkg.name)")
+                exit(1)
+            }
+
+            let lockedPackage = lockFile[pkg.gitURL]
+            lockFile[pkg.gitURL] = LockedPackage(url: pkg.gitURL, usedCommitID: usedCommitID, pinnedCommitID: lockedPackage?.pinnedCommitID, overrideURL: newURL)
+        }
+    }
+
+    return packages
+}
+
+func writeLockFile(packages: [ExternalDependency], lock: LockFile?) {
+    let lockFile: LockFile = lock ?? LockFile()
+
+    var newPackages = [LockedPackage]()
+
+    let lockPkgs = lockFile.packages
+    for pkg in packages {
+        guard let usedCommitID = getCurrentCommitID(pkg) else {
+            print("ERROR: Corrupt git repository for package \(pkg.name)")
+            exit(1)
+        }
+
+        var found = false
+        for lockedPkg in lockPkgs {
+            if lockedPkg.url == pkg.gitURL {
+                newPackages.append(LockedPackage(url: pkg.gitURL, usedCommitID: usedCommitID, pinnedCommitID:lockedPkg.pinnedCommitID, overrideURL:lockedPkg.overrideURL))
+                found = true
+                break
+            }
+        }
+        if !found {
+            newPackages.append(LockedPackage(url: pkg.gitURL, usedCommitID:usedCommitID))
+        }
+    }
+    lockFile.packages = newPackages
+    let string = lockFile.serialize()
+    do {
+        try string.writeToFile(defaultLockFile, atomically: true, encoding: NSUTF8StringEncoding)
+    } catch {
+        print("ERROR: Could not write lock file \(defaultLockFile)")
+    }
 }
 
 func help() {
@@ -239,7 +217,7 @@ func help() {
     print("© 2016 Anarchy Tools Contributors.")
     print("")
     print("Usage:")
-    print("  atpm [info|fetch|update|add|install|uninstall]")
+    print("  atpm [info|fetch|update|pin|unpin|override]")
 }
 
 //usage message
@@ -251,6 +229,12 @@ if Process.arguments.contains("--help") {
 // MARK: - Argument handling
 
 let package = loadPackageFile()
+let lockFile = loadLockFile()
+
+guard Process.arguments.count > 1 else {
+    help()
+    exit(1)
+}
 
 switch Process.arguments[1] {
 case "info":
@@ -259,19 +243,67 @@ case "info":
         exit(0)
     }
 case "fetch":
-    if fetch(package) {
+    let packages = fetch(package, lock: lockFile)
+    if packages.count > 0 {
+        if let conflicts = validateVersions(packages) {
+            print("Can not solve the version graph. The following conflicts were detected:")
+            for (package, versions) in conflicts {
+                print(" - Package: \(package.name) -> \(versions)")
+            }
+            exit(1)
+        }
+        writeLockFile(packages, lock: lockFile)
         exit(0)
     }
 case "update":
-    if update(package) {
+    let packages = update(package, lock: lockFile)
+    if packages.count > 0 {
+        if let conflicts = validateVersions(packages) {
+            print("Can not solve the version graph. The following conflicts were detected:")
+            for (package, versions) in conflicts {
+                print(" - Package: \(package.name) -> \(versions)")
+            }
+            exit(1)
+        }
+        writeLockFile(packages, lock: lockFile)
         exit(0)
     }
-case "add":
-    print("not implemented")
-case "install":
-    print("not implemented")
-case "uninstall":
-    print("not implemented")
+case "pin":
+    if Process.arguments.count == 3 {
+        let packages = pinStatus(package, lock: lockFile, name: Process.arguments[2], pinned: true)
+        if packages.count > 0 {
+            writeLockFile(packages, lock: lockFile)
+        }
+        exit(0)
+    } else {
+        print("Usage: atpm pin <package-name>")
+    }
+case "unpin":
+    if Process.arguments.count == 3 {
+        let packages = pinStatus(package, lock: lockFile, name: Process.arguments[2], pinned: false)
+        if packages.count > 0 {
+            writeLockFile(packages, lock: lockFile)
+        }
+        exit(0)
+    } else {
+        print("Usage: atpm pin <package-name>")
+    }
+case "override":
+    if Process.arguments.count == 4 {
+        let packages = overrideURL(package, lock: lockFile, name: Process.arguments[2], newURL: Process.arguments[3])
+        if packages.count > 0 {
+            writeLockFile(packages, lock: lockFile)
+        }
+        exit(0)
+    } else if Process.arguments.count == 3 {
+        let packages = overrideURL(package, lock: lockFile, name: Process.arguments[2], newURL: nil)
+        if packages.count > 0 {
+            writeLockFile(packages, lock: lockFile)
+        }
+        exit(0)
+    } else {
+        print("Usage: atpm override <package-name> [<overridden-url>]")
+    }
 default:
     help()
 }

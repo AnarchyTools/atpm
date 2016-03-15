@@ -18,8 +18,8 @@
   :name "atpm"
   :import-packages ["atpkg/build.atpkg"]
 
-    :tasks {
-      :default {
+  :tasks {
+    :default {
       :tool "nop"
       :dependencies ["atpm" "build-tests" "run-tests"]
     }
@@ -29,7 +29,7 @@
       :sources ["atpm_tools/**.swift"]
       :name "atpm_tools"
       :output-type "static-library"
-      :compile-options ["-enable-testing"]
+      :compile-options ["-enable-testing" "-DDEBUG" "-g"]
 
       :overlays {
         :bootstrap-osx {
@@ -52,6 +52,8 @@
       :output-type "executable"
       :link-with ["atpkg.a" "atpm_tools.a"]
       :dependencies ["atpkg.atpkg" "atpmtools"]
+      :publish-product true
+      :compile-options ["-DDEBUG" "-g"]
 
       :overlays {
         :bootstrap-osx {
@@ -89,5 +91,5 @@
       :test-executable ".atllbuild/products/tests"
       :dependencies ["build-tests"]
     }
-  }
+  } 
 )
