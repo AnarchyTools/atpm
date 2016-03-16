@@ -13,4 +13,4 @@
 // limitations under the License.
 import XCTest
 
-XCTMain([VersionTests()])
+XCTMain([VersionTests(), VersionRangeTests()])

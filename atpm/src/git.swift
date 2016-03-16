@@ -89,56 +89,16 @@ func updateDependency(pkg: ExternalDependency, lock: LockedPackage?, firstTime: 
             throw PMError.GitError(exitCode: pullResult)
         }
     case .Version(let version):
-        var min: Version? = nil
-        var max: Version? = nil
 
-        var minEquals = true
-        var maxEquals = true
+        let versionRange = VersionRange()
         for ver in version {
-            if ver.hasPrefix(">=") {
-                min = Version(string: ver.substringFromIndex(ver.startIndex.advancedBy(2)))
-            } else if ver.hasPrefix(">") {
-                min = Version(string: ver.substringFromIndex(ver.startIndex.advancedBy(1)))
-                minEquals = false
-            } else if ver.hasPrefix("<=") {
-                max = Version(string: ver.substringFromIndex(ver.startIndex.advancedBy(2)))
-            } else if ver.hasPrefix("<") {
-                max = Version(string: ver.substringFromIndex(ver.startIndex.advancedBy(1)))
-                maxEquals = false
-            } else if ver.hasPrefix("==") {
-                max = Version(string: ver.substringFromIndex(ver.startIndex.advancedBy(2)))
-                min = max
-            } else {
-                max = Version(string: ver)
-                min = max
-            }
+            try versionRange.combine(ver)
         }
         var versions = fetchVersions(pkg)
 
         do {
             versions = try versions.filter { version throws -> Bool in
-                var valid = true
-                if let min = min {
-                    if minEquals {
-                        valid = (version >= min)
-                    } else {
-                        valid = (version > min)
-                    }
-                }
-
-                if !valid {
-                    return false
-                }
-
-                if let max = max {
-                    if maxEquals {
-                        valid = (version <= max)
-                    } else {
-                        valid = (version < max)
-                    }
-                }
-
-                return valid
+                return versionRange.versionInRange(version)
             }
 
             versions.sortInPlace { (v1, v2) -> Bool in
