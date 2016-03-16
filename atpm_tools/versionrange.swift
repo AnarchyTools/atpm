@@ -138,3 +138,31 @@ public class VersionRange {
         return valid
 	}
 }
+
+extension VersionRange: CustomStringConvertible {
+	public var description: String {
+		if let min = self.min, max = self.max where min == max {
+			return "==\(min)"
+		} else {
+			var result = ""
+			if let min = self.min {
+				if self.minInclusive == true {
+					result += ">=\(min)"
+				} else {
+					result += ">\(min)"
+				}
+			}
+			if self.min != nil && self.max != nil {
+				result += ", "
+			}	
+			if let max = self.max {
+				if self.maxInclusive == true {
+					result += "<=\(max)"
+				} else {
+					result += "<\(max)"
+				}
+			}
+			return result
+		}
+	}
+}

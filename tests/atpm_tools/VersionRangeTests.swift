@@ -23,6 +23,7 @@ class VersionRangeTests: XCTestCase {
         XCTAssert(v.max == Version(string: "1.2.3"))
         XCTAssert(v.minInclusive == true)
         XCTAssert(v.maxInclusive == true)
+        XCTAssert(v.description == "==1.2.3")
     }
 
     func testInitSmaller() throws {
@@ -31,6 +32,7 @@ class VersionRangeTests: XCTestCase {
         XCTAssert(v.max == Version(string: "1.2.3"))
         XCTAssert(v.minInclusive == nil)
         XCTAssert(v.maxInclusive == false)
+        XCTAssert(v.description == "<1.2.3")
     }
 
     func testInitBigger() throws {
@@ -39,6 +41,7 @@ class VersionRangeTests: XCTestCase {
         XCTAssert(v.max == nil)
         XCTAssert(v.minInclusive == false)
         XCTAssert(v.maxInclusive == nil)
+        XCTAssert(v.description == ">1.2.3")
     }
 
     func testInitSmallerEqual() throws {
@@ -47,6 +50,7 @@ class VersionRangeTests: XCTestCase {
         XCTAssert(v.max == Version(string: "1.2.3"))
         XCTAssert(v.minInclusive == nil)
         XCTAssert(v.maxInclusive == true)
+        XCTAssert(v.description == "<=1.2.3")
     }
 
     func testInitBiggerEqual() throws {
@@ -55,6 +59,7 @@ class VersionRangeTests: XCTestCase {
         XCTAssert(v.max == nil)
         XCTAssert(v.minInclusive == true)
         XCTAssert(v.maxInclusive == nil)
+        XCTAssert(v.description == ">=1.2.3")
     }
 
     func testInitEqual() throws {
@@ -63,6 +68,7 @@ class VersionRangeTests: XCTestCase {
         XCTAssert(v.max == Version(string: "1.2.3"))
         XCTAssert(v.minInclusive == true)
         XCTAssert(v.maxInclusive == true)
+        XCTAssert(v.description == "==1.2.3")
     }
 
     // MARK: - Valid combination tests
@@ -73,6 +79,7 @@ class VersionRangeTests: XCTestCase {
         XCTAssert(v.max == Version(string: "2.0.0"))
         XCTAssert(v.minInclusive == false)
         XCTAssert(v.maxInclusive == false)
+        XCTAssert(v.description == ">1.0.1, <2.0.0")
     }
 
     func testCombineWithUpperBound() throws {
@@ -82,6 +89,7 @@ class VersionRangeTests: XCTestCase {
         XCTAssert(v.max == Version(string: "2.0.0"))
         XCTAssert(v.minInclusive == false)
         XCTAssert(v.maxInclusive == false)
+        XCTAssert(v.description == ">1.0.1, <2.0.0")
     }
 
     func testCombineMultipleUpper() throws {
@@ -94,6 +102,7 @@ class VersionRangeTests: XCTestCase {
         XCTAssert(v.max == Version(string: "1.9.0"))
         XCTAssert(v.minInclusive == false)
         XCTAssert(v.maxInclusive == false)
+        XCTAssert(v.description == ">1.0.1, <1.9.0")
     }
 
     func testCombineMultipleLower() throws {
@@ -106,6 +115,7 @@ class VersionRangeTests: XCTestCase {
         XCTAssert(v.max == Version(string: "2.0.0"))
         XCTAssert(v.minInclusive == false)
         XCTAssert(v.maxInclusive == false)
+        XCTAssert(v.description == ">1.5.0, <2.0.0")
     }
 
     func testCombineEqual() throws {
@@ -116,6 +126,7 @@ class VersionRangeTests: XCTestCase {
         XCTAssert(v.max == Version(string: "1.5.0"))
         XCTAssert(v.minInclusive == true)
         XCTAssert(v.maxInclusive == true)
+        XCTAssert(v.description == "==1.5.0")
     }
 
     // MARK: - Invalid combination tests
@@ -184,7 +195,6 @@ class VersionRangeTests: XCTestCase {
             // expected
         }
     }
-
 }
 
 extension VersionRangeTests: XCTestCaseProvider {

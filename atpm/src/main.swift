@@ -248,7 +248,7 @@ case "fetch":
         if let conflicts = validateVersions(packages) {
             print("Can not solve the version graph. The following conflicts were detected:")
             for (package, versions) in conflicts {
-                print(" - Package: \(package.name) -> \(versions)")
+                print(" - Package: \(package) -> \(versions)")
             }
             exit(1)
         }
@@ -261,7 +261,7 @@ case "update":
         if let conflicts = validateVersions(packages) {
             print("Can not solve the version graph. The following conflicts were detected:")
             for (package, versions) in conflicts {
-                print(" - Package: \(package.name) -> \(versions)")
+                print(" - Package: \(package) -> \(versions)")
             }
             exit(1)
         }
