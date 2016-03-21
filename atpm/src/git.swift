@@ -26,12 +26,12 @@ func fetchVersions(pkg: ExternalDependency) -> [Version] {
     }
 
     var versions = [Version]()
-    var buffer = [CChar](count: 255, repeatedValue: 0)
+    var buffer = [CChar](repeating: 0, count: 255)
     while feof(fp) == 0 {
         if fgets(&buffer, 255, fp) == nil {
             break
         }
-        if let versionString = String.fromCString(buffer) {
+        if let versionString = String(validatingUTF8: buffer) {
             versions.append(Version(string: versionString))
         }
     }
@@ -101,9 +101,9 @@ func updateDependency(pkg: ExternalDependency, lock: LockedPackage?, firstTime: 
                 return versionRange.versionInRange(version)
             }
 
-            versions.sortInPlace { (v1, v2) -> Bool in
+            versions.sort(isOrderedBefore: { (v1, v2) -> Bool in
                 return v1 < v2
-            }
+            })
 
             if versions.count > 0 {
                 print("Valid versions: \(versions), using \(versions.last!)")
@@ -169,13 +169,13 @@ func getCurrentCommitID(pkg: ExternalDependency) -> String? {
         fclose(fp)
     }
 
-    var buffer = [CChar](count: 255, repeatedValue: 0)
+    var buffer = [CChar](repeating: 0, count: 255)
     while feof(fp) == 0 {
         if fgets(&buffer, 255, fp) == nil {
             break
         }
-        if let commitID = String.fromCString(buffer) {
-            return commitID.substringToIndex(commitID.startIndex.advancedBy(commitID.characters.count - 1))
+        if let commitID = String(validatingUTF8: buffer) {
+            return commitID.substringToIndex(commitID.startIndex.advanced(by:commitID.characters.count - 1))
         }
     }
     return nil

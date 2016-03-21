@@ -149,8 +149,8 @@ class VersionTests: XCTestCase {
 
 }
 
-extension VersionTests: XCTestCaseProvider {
-    var allTests : [(String, () throws -> Void)] {
+extension VersionTests {
+    static var allTests : [(String, VersionTests -> () throws -> Void)] {
         return [
             ("testParse1", testParse1),
             ("testParse2", testParse2),

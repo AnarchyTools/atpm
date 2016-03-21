@@ -6,7 +6,7 @@ public class VersionRange {
 	public var max: Version?
 	public var maxInclusive: Bool?
 
-	public enum Error: ErrorType {
+	public enum Error: ErrorProtocol {
 		case CombiningFailed
 	}
 
@@ -23,7 +23,7 @@ public class VersionRange {
 
 	public func combine(versionString: String) throws {
 		if versionString.hasPrefix(">=") {
-            let tmp = Version(string: versionString.substringFromIndex(versionString.startIndex.advancedBy(2)))
+            let tmp = Version(string: versionString.substringFromIndex(versionString.startIndex.advanced(by:2)))
 			if self.min != nil {
 				if (tmp == self.min! && self.minInclusive == false) || tmp < self.min! {
 					return
@@ -37,7 +37,7 @@ public class VersionRange {
 			self.min = tmp
 			self.minInclusive = true
         } else if versionString.hasPrefix(">") {
-            let tmp = Version(string: versionString.substringFromIndex(versionString.startIndex.advancedBy(1)))
+            let tmp = Version(string: versionString.substringFromIndex(versionString.startIndex.advanced(by:1)))
 			if self.min != nil {
 				if tmp < self.min! {
 					return
@@ -51,7 +51,7 @@ public class VersionRange {
 			self.min = tmp
             self.minInclusive = false
         } else if versionString.hasPrefix("<=") {
-            let tmp = Version(string: versionString.substringFromIndex(versionString.startIndex.advancedBy(2)))
+            let tmp = Version(string: versionString.substringFromIndex(versionString.startIndex.advanced(by:2)))
 			if self.max != nil {
 				if (tmp == self.max! && self.maxInclusive == false) || tmp > self.max! {
 					return
@@ -65,7 +65,7 @@ public class VersionRange {
 			self.max = tmp
             self.maxInclusive = true
         } else if versionString.hasPrefix("<") {
-            let tmp = Version(string: versionString.substringFromIndex(versionString.startIndex.advancedBy(1)))
+            let tmp = Version(string: versionString.substringFromIndex(versionString.startIndex.advanced(by:1)))
 			if self.max != nil {
 				if tmp > self.max! {
 					return
@@ -79,7 +79,7 @@ public class VersionRange {
 			self.max = tmp
             self.maxInclusive = false
         } else if versionString.hasPrefix("==") {
-            let tmp = Version(string: versionString.substringFromIndex(versionString.startIndex.advancedBy(2)))
+            let tmp = Version(string: versionString.substringFromIndex(versionString.startIndex.advanced(by:2)))
             if self.max != nil {
             	if tmp > self.max! {
 					throw VersionRange.Error.CombiningFailed

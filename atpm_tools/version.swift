@@ -38,7 +38,7 @@ public class Version {
     }
     
     public init(string: String) {
-        var gen = string.characters.generate()
+        var gen = string.characters.makeIterator()
         
         self.major = 0
         self.minor = 0
@@ -141,7 +141,7 @@ public func < (lhs: Version, rhs: Version) -> Bool {
                 } else if lhs.ext == rhs.ext {
                     return false
                 } else {
-                    return [lhs.ext, rhs.ext].sort()[0] == lhs.ext
+                    return [lhs.ext, rhs.ext].sorted()[0] == lhs.ext
                 }
             }
         }
@@ -168,7 +168,7 @@ public func > (lhs: Version, rhs: Version) -> Bool {
                 } else if lhs.ext == rhs.ext {
                     return false
                 } else {
-                    return [lhs.ext, rhs.ext].sort()[0] == rhs.ext
+                    return [lhs.ext, rhs.ext].sorted()[0] == rhs.ext
                 }
             }
         }

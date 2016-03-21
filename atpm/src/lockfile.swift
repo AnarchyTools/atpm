@@ -14,7 +14,7 @@
 import Foundation
 import atpkg
 
-enum LockFileError: ErrorType {
+enum LockFileError: ErrorProtocol {
     case NonVectorImport
     case ParserFailed
     case NonLockFile
@@ -161,7 +161,7 @@ final public class LockFile {
             var index: Int? = nil
             for lock in self.packages {
                 if lock.url == url {
-                    index = self.packages.indexOf(lock)
+                    index = self.packages.index(of:lock)
                     break
                 }
             }
@@ -174,7 +174,7 @@ final public class LockFile {
                 }
             } else {
                 if let index = index {
-                    self.packages.removeAtIndex(index)
+                    self.packages.remove(at:index)
                 }
             }
         }
