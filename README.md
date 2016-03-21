@@ -90,8 +90,8 @@ Example:
         :tool "atllbuild"
         :source ["src/**.swift"]
         :name "test"
-        :outputType "executable"
-        :linkWithProduct ["atpkg.a"]
+        :output-type "executable"
+        :link-with ["atpkg.a"]
         :dependencies ["atpkg.atpkg"]
     }
   }
