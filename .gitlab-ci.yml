@@ -27,8 +27,12 @@ osx:
     script: 
         - export PATH=/Library/Developer/Toolchains/swift-latest.xctoolchain/usr/bin:"${PATH}"
         - atbuild check
+		- rm -rf bin
+		- mkdir bin
+		- cp .atllbuild/products/$cli_executable bin/$cli_executable
     tags:
         - openswift
     artifacts:
         paths:
-            - .atllbuild/products/$cli_executable
+            - bin
+
