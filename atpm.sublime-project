@@ -10,6 +10,7 @@
 	"build_systems": [
 		{
 			"name": "Build with AnarchyTools",
+			"path": "$HOME/bin:/bin:/usr/bin:/usr/local/bin",
 			"cmd": [ "atbuild", "default" ],
 			"working_dir": "${project_path}",
 			"selector": "source.swift",
@@ -17,6 +18,7 @@
 		},
 		{
 			"name": "Run Tests with AnarchyTools",
+			"path": "$HOME/bin:/bin:/usr/bin:/usr/local/bin",
 			"cmd": [ "atbuild", "check" ],
 			"working_dir": "${project_path}",
 			"selector": "source.swift",

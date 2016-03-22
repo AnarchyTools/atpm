@@ -205,7 +205,7 @@ func writeLockFile(packages: [ExternalDependency], lock: LockFile?) {
     lockFile.packages = newPackages
     let string = lockFile.serialize()
     do {
-        try string.writeToFile(defaultLockFile, atomically: true, encoding: NSUTF8StringEncoding)
+        try string.write(toFile: defaultLockFile, atomically: true, encoding: NSUTF8StringEncoding)
     } catch {
         print("ERROR: Could not write lock file \(defaultLockFile)")
     }

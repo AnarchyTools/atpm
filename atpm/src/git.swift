@@ -43,7 +43,7 @@ func fetchVersions(pkg: ExternalDependency) -> [Version] {
 // Returns `false` if repo does not exist or if a `git fetch origin` fails
 func updateDependency(pkg: ExternalDependency, lock: LockedPackage?, firstTime: Bool = false) throws {
     let fm = NSFileManager.defaultManager()
-    if !fm.fileExistsAtPath("external/\(pkg.name)") {
+    if !fm.fileExists(atPath: "external/\(pkg.name)") {
         throw PMError.MissingPackageCheckout
     }
 
@@ -128,13 +128,13 @@ func updateDependency(pkg: ExternalDependency, lock: LockedPackage?, firstTime: 
 // fetching the correct branch/tag
 func fetchDependency(pkg: ExternalDependency, lock: LockedPackage?) throws {
     let fm = NSFileManager.defaultManager()
-    if fm.fileExistsAtPath("external/\(pkg.name)") {
+    if fm.fileExists(atPath: "external/\(pkg.name)") {
         print("Already downloaded")
         return
     }
 
-    if !fm.fileExistsAtPath("external") {
-        try fm.createDirectoryAtPath("external", withIntermediateDirectories: false, attributes: nil)
+    if !fm.fileExists(atPath: "external") {
+        try fm.createDirectory(atPath: "external", withIntermediateDirectories: false, attributes: nil)
     }
 
     // If the url has been overridden checkout that repo instead
@@ -157,7 +157,7 @@ func fetchDependency(pkg: ExternalDependency, lock: LockedPackage?) throws {
 
 func getCurrentCommitID(pkg: ExternalDependency) -> String? {
     let fm = NSFileManager.defaultManager()
-    if !fm.fileExistsAtPath("external/\(pkg.name)") {
+    if !fm.fileExists(atPath: "external/\(pkg.name)") {
         return nil
     }
 
@@ -175,7 +175,7 @@ func getCurrentCommitID(pkg: ExternalDependency) -> String? {
             break
         }
         if let commitID = String(validatingUTF8: buffer) {
-            return commitID.substringToIndex(commitID.startIndex.advanced(by:commitID.characters.count - 1))
+            return commitID.substring(to: commitID.startIndex.advanced(by:commitID.characters.count - 1))
         }
     }
     return nil
