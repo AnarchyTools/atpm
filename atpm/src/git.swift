@@ -47,7 +47,7 @@ func updateDependency(pkg: ExternalDependency, lock: LockedPackage?, firstTime: 
         throw PMError.MissingPackageCheckout
     }
 
-    let fetchResult = logAndExecute("cd 'external/\(pkg.name)' && git fetch origin")
+    let fetchResult = logAndExecute("cd 'external/\(pkg.name)' && git fetch --tags origin")
     if fetchResult != 0 {
         throw PMError.GitError(exitCode: fetchResult)
     }
