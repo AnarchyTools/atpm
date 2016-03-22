@@ -1,5 +1,27 @@
 import Foundation
 
+//SR-138
+#if os(Linux)
+extension String {
+    public func substring(with range: Range<String.Index>) -> String {
+        var result = ""
+        result.reserveCapacity(range.count)
+        for idx in range {
+            result.append(self.characters[idx])
+        }
+        return result
+    }
+
+    public func substring(to index: String.Index) -> String {
+        return self.substring(with: self.startIndex..<index)
+    }
+
+    public func substring(from index: String.Index) -> String {
+        return self.substring(with: index..<self.endIndex)
+    }
+}
+#endif
+
 public class VersionRange {
 	public var min: Version?
 	public var minInclusive: Bool?

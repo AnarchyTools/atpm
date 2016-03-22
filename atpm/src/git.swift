@@ -2,6 +2,20 @@ import Foundation
 import atpkg
 import atpm_tools
 
+#if os(Linux)
+extension NSFileManager {
+    func createDirectory(atPath path: String, withIntermediateDirectories createIntermediates: Bool,  attributes: [String : AnyObject]? = [:]) throws {
+        return try self.createDirectoryAtPath(path, withIntermediateDirectories: createIntermediates, attributes: attributes)
+    }
+    func removeItem(atPath path: String) throws {
+        return try self.removeItemAtPath(path)
+    }
+    func fileExists(atPath path: String) -> Bool {
+        return self.fileExistsAtPath(path)
+    }
+}
+#endif
+
 private func logAndExecute(command: String) -> Int32 {
     // print("Executing: \(command)")
     let exitCode = system(command)

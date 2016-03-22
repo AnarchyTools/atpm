@@ -178,6 +178,14 @@ func overrideURL(package: Package, lock: LockFile?, name: String, newURL: String
     return packages
 }
 
+#if os(Linux) // something is missing in foundation
+extension String {
+    func write(toFile path: String, atomically: Bool, encoding: UInt) throws {
+        try self.writeToFile(path, atomically: atomically, encoding: encoding)
+    }
+}
+#endif
+
 func writeLockFile(packages: [ExternalDependency], lock: LockFile?) {
     let lockFile: LockFile = lock ?? LockFile()
 
