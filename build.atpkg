@@ -70,9 +70,8 @@
     }
 
     :check {
-      :tool "shell"
-      :script "./tests/atpm/test.sh"
-      :dependencies ["default"]
+      :tool "nop"
+      :dependencies ["run-tests"]
     }
 
     :build-tests {
