@@ -197,15 +197,7 @@ final public class LockFile {
         for pkg in self.packages {
             let serialized = pkg.serialize()
             for line in serialized {
-                result += "    \(line)"
-                if line != serialized.last! {
-                    result += "\n"
-                }
-            }
-            if pkg != self.packages.last! {
-                result += ",\n"
-            } else {
-                result += "\n"
+                result += "    \(line)\n"
             }
         }
 
