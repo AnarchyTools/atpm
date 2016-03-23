@@ -78,7 +78,7 @@ Example:
 (package
   :name "test"
 
-  :externals [
+  :external-packages [
     {
       :url "https://github.com/AnarchyTools/atpkg.git"
       :version [ "1.0.0" ]
