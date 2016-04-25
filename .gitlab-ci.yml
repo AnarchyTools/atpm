@@ -5,30 +5,35 @@ variables:
     docker_tag: "atpm"
     cli_executable: "atpm"
 
-before_script: 
-    - git submodule update --init --recursive
 linux:
     stage: build
     script:
-        - docker build -t $docker_tag .
-        - id=$(docker create $docker_tag)
-        - mkdir bin
-        - docker cp $id:$docker_tag/.atllbuild/products/$cli-executable bin/$cli_executable
-        - docker rm -v $id
-        - docker rmi $docker_tag
-    tags:
-        - docker
+        - apt-get update
+        - apt-get install --no-install-recommends xz-utils curl git ca-certificates -y
+        - curl -L https://github.com/AnarchyTools/atbuild/releases/download/0.10.0/atbuild-0.10.0-linux.tar.xz | tar xJ
+        - curl cp atbuild-*/atbuild /usr/local/bin/atbuild
+        - atbuild check
+        - mkdir atpm-${CI_BUILD_REF}
+        - cp bin/atpm atpm-${CI_BUILD_REF}
+        - tar cJf atpm-${CI_BUILD_REF}-linux.tar.xz atpm-${CI_BUILD_REF}
+    image: drewcrawford/swift:latest
     artifacts:
         paths:
-            - bin
+            - atpm-${CI_BUILD_REF}-linux.tar.xz
+    tags: 
+        - autoscale-linux
 
 osx:
     stage: build
     script: 
         - export PATH=/Library/Developer/Toolchains/swift-latest.xctoolchain/usr/bin:"${PATH}"
+        - git submodule update --init --recursive
         - atbuild check
+        - mkdir atpm-${CI_BUILD_REF}
+        - cp bin/atpm atpm-${CI_BUILD_REF}
+        - tar cJf atpm-${CI_BUILD_REF}-osx.tar.xz atpm-${CI_BUILD_REF}
     tags:
         - openswift
     artifacts:
         paths:
-            - .atllbuild/products/$cli_executable
+            - atpm-${CI_BUILD_REF}-osx.tar.xz
