@@ -10,12 +10,33 @@ Then you can check the program was built successfully:
 
 ```bash
 $ ./atpm --help
-atpm - Anarchy Tools Package Manager 0.1.0-dev
+atpm - Anarchy Tools Package Manager 1.0.0-GM1
 https://github.com/AnarchyTools
 © 2016 Anarchy Tools Contributors.
 
-Usage:
-  atpm [info|fetch|update|pin|unpin|override]
+Usage: atpm [command]
+
+    info
+        show information for all package dependencies
+
+    fetch
+        fetch new packages, does not touch already fetched packages
+
+    update
+        update already fetched packages (if they are not pinned)
+
+    pin <package-name>
+        pin current package status of <package-name> and record in lock file
+
+    unpin <package-name>
+        unpin status of <package-name>
+
+    override <package-name> <new-url>
+        override git url of <package-name> to <new-url>
+
+    restore <package-name>
+        remove git url override of <package-name>
+
 ```
 
 # Usage
