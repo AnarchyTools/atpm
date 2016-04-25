@@ -11,7 +11,7 @@ linux:
         - atbuild check
     tags:
         - autoscale-linux
-        - atpm
+        - atbuild
     image: drewcrawford/swift:latest
 
 osx:
@@ -20,4 +20,4 @@ osx:
         - atbuild check
     tags:
         - openswift
-        - atpm
+        - atbuild
