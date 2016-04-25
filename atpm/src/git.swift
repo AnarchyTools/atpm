@@ -1,20 +1,6 @@
-import Foundation
+import atfoundation
 import atpkg
 import atpm_tools
-
-#if os(Linux)
-extension NSFileManager {
-    func createDirectory(atPath path: String, withIntermediateDirectories createIntermediates: Bool,  attributes: [String : AnyObject]? = [:]) throws {
-        return try self.createDirectoryAtPath(path, withIntermediateDirectories: createIntermediates, attributes: attributes)
-    }
-    func removeItem(atPath path: String) throws {
-        return try self.removeItemAtPath(path)
-    }
-    func fileExists(atPath path: String) -> Bool {
-        return self.fileExistsAtPath(path)
-    }
-}
-#endif
 
 private func logAndExecute(command: String) -> Int32 {
     // print("Executing: \(command)")
@@ -30,7 +16,7 @@ private func logAndExecute(command: String) -> Int32 {
 // - *.*
 // - v*.*.*
 // - v*.*
-func fetchVersions(pkg: ExternalDependency) -> [Version] {
+func fetchVersions(_ pkg: ExternalDependency) -> [Version] {
     let fp = popen("cd 'external/\(pkg.name)' && git tag -l *.*.* -l *.* -l v*.*.* -l v*.*", "r")
     guard fp != nil else {
         return []
@@ -55,13 +41,12 @@ func fetchVersions(pkg: ExternalDependency) -> [Version] {
 // Update an already checked out repository
 //
 // Returns `false` if repo does not exist or if a `git fetch origin` fails
-func updateDependency(pkg: ExternalDependency, lock: LockedPackage?, firstTime: Bool = false) throws {
-    let fm = NSFileManager.defaultManager()
-    if !fm.fileExists(atPath: "external/\(pkg.name)") {
+func updateDependency(_ pkg: ExternalDependency, lock: LockedPackage?, firstTime: Bool = false) throws {
+    if !FS.fileExists(path: Path("external/\(pkg.name)")) {
         throw PMError.MissingPackageCheckout
     }
 
-    let fetchResult = logAndExecute("cd 'external/\(pkg.name)' && git fetch --tags origin")
+    let fetchResult = logAndExecute(command: "cd 'external/\(pkg.name)' && git fetch --tags origin")
     if fetchResult != 0 {
         throw PMError.GitError(exitCode: fetchResult)
     }
@@ -69,7 +54,7 @@ func updateDependency(pkg: ExternalDependency, lock: LockedPackage?, firstTime: 
     // If we are pinned only checkout that commit
     if let lock = lock where lock.pinnedCommitID != nil {
         print("Package \(pkg.name) is pinned to \(lock.pinnedCommitID!)")
-        let pullResult = logAndExecute("cd 'external/\(pkg.name)' && git checkout '\(lock.pinnedCommitID!)'")
+        let pullResult = logAndExecute(command: "cd 'external/\(pkg.name)' && git checkout '\(lock.pinnedCommitID!)'")
         if pullResult != 0 {
             throw PMError.GitError(exitCode: pullResult)
         }
@@ -79,26 +64,26 @@ func updateDependency(pkg: ExternalDependency, lock: LockedPackage?, firstTime: 
     // on first time checkout only pull the commit that has been logged in the lockfile
     if let lock = lock where firstTime == true {
         print("Fetching commit as defined in lock file for \(pkg.name): \(lock.usedCommitID)")
-        let pullResult = logAndExecute("cd 'external/\(pkg.name)' && git checkout '\(lock.usedCommitID)'")
+        let pullResult = logAndExecute(command: "cd 'external/\(pkg.name)' && git checkout '\(lock.usedCommitID)'")
         if pullResult != 0 {
             throw PMError.GitError(exitCode: pullResult)
         }
-        return        
+        return
     }
 
     switch pkg.version {
     case .Branch(let branch):
-        let pullResult = logAndExecute("cd 'external/\(pkg.name)' && git checkout '\(branch)' && git pull origin")
+        let pullResult = logAndExecute(command: "cd 'external/\(pkg.name)' && git checkout '\(branch)' && git pull origin")
         if pullResult != 0 {
             throw PMError.GitError(exitCode: pullResult)
         }
     case .Tag(let tag):
-        let pullResult = logAndExecute("cd 'external/\(pkg.name)' && git checkout '\(tag)'")
+        let pullResult = logAndExecute(command: "cd 'external/\(pkg.name)' && git checkout '\(tag)'")
         if pullResult != 0 {
             throw PMError.GitError(exitCode: pullResult)
         }
     case .Commit(let commitID):
-        let pullResult = logAndExecute("cd 'external/\(pkg.name)' && git checkout '\(commitID)'")
+        let pullResult = logAndExecute(command: "cd 'external/\(pkg.name)' && git checkout '\(commitID)'")
         if pullResult != 0 {
             throw PMError.GitError(exitCode: pullResult)
         }
@@ -121,7 +106,7 @@ func updateDependency(pkg: ExternalDependency, lock: LockedPackage?, firstTime: 
 
             if versions.count > 0 {
                 print("Valid versions: \(versions), using \(versions.last!)")
-                let pullResult = logAndExecute("cd 'external/\(pkg.name)' && git checkout '\(versions.last!)'")
+                let pullResult = logAndExecute(command: "cd 'external/\(pkg.name)' && git checkout '\(versions.last!)'")
                 if pullResult != 0 {
                     throw PMError.GitError(exitCode: pullResult)
                 }
@@ -140,28 +125,28 @@ func updateDependency(pkg: ExternalDependency, lock: LockedPackage?, firstTime: 
 //
 // This only checks out the default branch and calls updateDependency() for
 // fetching the correct branch/tag
-func fetchDependency(pkg: ExternalDependency, lock: LockedPackage?) throws {
-    let fm = NSFileManager.defaultManager()
-    if fm.fileExists(atPath: "external/\(pkg.name)") {
+func fetchDependency(_ pkg: ExternalDependency, lock: LockedPackage?) throws {
+    if FS.fileExists(path: Path("external/\(pkg.name)")) {
         print("Already downloaded")
         return
     }
 
-    if !fm.fileExists(atPath: "external") {
-        try fm.createDirectory(atPath: "external", withIntermediateDirectories: false, attributes: nil)
+    let ext = Path("external")
+    if !FS.fileExists(path: ext) {
+        try FS.createDirectory(path: ext)
     }
 
     // If the url has been overridden checkout that repo instead
     if let lock = lock where lock.overrideURL != nil {
         print("Package \(pkg.name) repo URL overridden: \(lock.overrideURL!)")
-        let cloneResult = logAndExecute("git clone --recurse-submodules '\(lock.overrideURL!)' 'external/\(pkg.name)'")
+        let cloneResult = logAndExecute(command: "git clone --recurse-submodules '\(lock.overrideURL!)' 'external/\(pkg.name)'")
         if cloneResult != 0 {
             throw PMError.GitError(exitCode: cloneResult)
         }
         return
     }
 
-    let cloneResult = logAndExecute("git clone --recurse-submodules '\(pkg.gitURL)' 'external/\(pkg.name)'")
+    let cloneResult = logAndExecute(command: "git clone --recurse-submodules '\(pkg.gitURL)' 'external/\(pkg.name)'")
     if cloneResult != 0 {
         throw PMError.GitError(exitCode: cloneResult)
     }
@@ -169,9 +154,8 @@ func fetchDependency(pkg: ExternalDependency, lock: LockedPackage?) throws {
     try updateDependency(pkg, lock: lock, firstTime: true)
 }
 
-func getCurrentCommitID(pkg: ExternalDependency) -> String? {
-    let fm = NSFileManager.defaultManager()
-    if !fm.fileExists(atPath: "external/\(pkg.name)") {
+func getCurrentCommitID(_ pkg: ExternalDependency) -> String? {
+    if !FS.fileExists(path: Path("external/\(pkg.name)")) {
         return nil
     }
 

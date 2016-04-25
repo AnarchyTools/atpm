@@ -12,14 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-let version = "0.1.0-dev"
+let version = "1.0.0-GM1"
 
-import Foundation
+import atfoundation
 import atpkg
 import atpm_tools
 
-let defaultBuildFile = "build.atpkg"
-let defaultLockFile = "build.atlock"
+let defaultBuildFile = Path("build.atpkg")
+let defaultLockFile = Path("build.atlock")
 
 func loadPackageFile() -> Package {
     do {
@@ -41,7 +41,7 @@ func loadLockFile() -> LockFile? {
 
 // MARK: - Command handling
 
-func info(package: Package, indent: Int = 4) -> Bool {
+func info(_ package: Package, indent: Int = 4) -> Bool {
     for dep in package.externals {
         var out = ""
         for _ in 0..<indent {
@@ -50,7 +50,7 @@ func info(package: Package, indent: Int = 4) -> Bool {
         out += "- \(dep.gitURL)"
         print(out)
 
-        let subPackagePath = "external/\(dep.name)/build.atpkg"
+        let subPackagePath = Path("external/\(dep.name)/build.atpkg")
         do {
             let subPackage = try Package(filepath: subPackagePath, overlay: [], focusOnTask: nil)
             info(subPackage, indent: indent + 4)
@@ -66,7 +66,7 @@ func info(package: Package, indent: Int = 4) -> Bool {
     return true
 }
 
-func fetch(package: Package, lock: LockFile?) -> [ExternalDependency] {
+func fetch(_ package: Package, lock: LockFile?) -> [ExternalDependency] {
     var packages = [ExternalDependency]()
 
     for pkg in package.externals {
@@ -74,8 +74,8 @@ func fetch(package: Package, lock: LockFile?) -> [ExternalDependency] {
         do {
             try fetchDependency(pkg, lock: lock?[pkg.gitURL])
 
-            symlink("..", "external/\(pkg.name)/external")
-            let subPackagePath = "external/\(pkg.name)/build.atpkg"
+            try FS.symlinkItem(from: Path(".."), to: Path("external/\(pkg.name)/external"))
+            let subPackagePath = Path("external/\(pkg.name)/build.atpkg")
             do {
                 let p = try Package(filepath: subPackagePath, overlay: [], focusOnTask: nil)
                 packages.append(pkg)
@@ -92,15 +92,15 @@ func fetch(package: Package, lock: LockFile?) -> [ExternalDependency] {
     return packages
 }
 
-func update(package: Package, lock: LockFile?) -> [ExternalDependency] {
+func update(_ package: Package, lock: LockFile?) -> [ExternalDependency] {
     var packages = [ExternalDependency]()
 
     for pkg in package.externals {
         print("Updating external dependency \(pkg.name)...")
         do {
             try updateDependency(pkg, lock: lock?[pkg.gitURL])
-            symlink("..", "external/\(pkg.name)/external")
-            let subPackagePath = "external/\(pkg.name)/build.atpkg"
+            try FS.symlinkItem(from: Path(".."), to: Path("external/\(pkg.name)/external"))
+            let subPackagePath = Path("external/\(pkg.name)/build.atpkg")
             do {
                 let p = try Package(filepath: subPackagePath, overlay: [], focusOnTask: nil)
                 packages.append(pkg)
@@ -116,12 +116,12 @@ func update(package: Package, lock: LockFile?) -> [ExternalDependency] {
     return packages
 }
 
-func pinStatus(package: Package, lock: LockFile?, name: String, pinned: Bool) -> [ExternalDependency] {
+func pinStatus(_ package: Package, lock: LockFile?, name: String, pinned: Bool) -> [ExternalDependency] {
     var packages = [ExternalDependency]()
     let lockFile: LockFile = lock ?? LockFile()
 
     for pkg in package.externals {
-        let subPackagePath = "external/\(pkg.name)/build.atpkg"
+        let subPackagePath = Path("external/\(pkg.name)/build.atpkg")
         do {
             let p = try Package(filepath: subPackagePath, overlay: [], focusOnTask: nil)
             packages.append(pkg)
@@ -149,12 +149,12 @@ func pinStatus(package: Package, lock: LockFile?, name: String, pinned: Bool) ->
     return packages
 }
 
-func overrideURL(package: Package, lock: LockFile?, name: String, newURL: String?) -> [ExternalDependency] {
+func overrideURL(_ package: Package, lock: LockFile?, name: String, newURL: String?) -> [ExternalDependency] {
     var packages = [ExternalDependency]()
     let lockFile: LockFile = lock ?? LockFile()
 
     for pkg in package.externals {
-        let subPackagePath = "external/\(pkg.name)/build.atpkg"
+        let subPackagePath = Path("external/\(pkg.name)/build.atpkg")
         do {
             let p = try Package(filepath: subPackagePath, overlay: [], focusOnTask: nil)
             packages.append(pkg)
@@ -178,15 +178,7 @@ func overrideURL(package: Package, lock: LockFile?, name: String, newURL: String
     return packages
 }
 
-#if os(Linux) // something is missing in foundation
-extension String {
-    func write(toFile path: String, atomically: Bool, encoding: UInt) throws {
-        try self.writeToFile(path, atomically: atomically, encoding: encoding)
-    }
-}
-#endif
-
-func writeLockFile(packages: [ExternalDependency], lock: LockFile?) {
+func writeLockFile(_ packages: [ExternalDependency], lock: LockFile?) {
     let lockFile: LockFile = lock ?? LockFile()
 
     var newPackages = [LockedPackage]()
@@ -213,7 +205,7 @@ func writeLockFile(packages: [ExternalDependency], lock: LockFile?) {
     lockFile.packages = newPackages
     let string = lockFile.serialize()
     do {
-        try string.write(toFile: defaultLockFile, atomically: true, encoding: NSUTF8StringEncoding)
+        try string.write(to: defaultLockFile)
     } catch {
         print("ERROR: Could not write lock file \(defaultLockFile)")
     }
@@ -223,9 +215,30 @@ func help() {
     print("atpm - Anarchy Tools Package Manager \(version)")
     print("https://github.com/AnarchyTools")
     print("© 2016 Anarchy Tools Contributors.")
-    print("")
-    print("Usage:")
-    print("  atpm [info|fetch|update|pin|unpin|override]")
+    print()
+    print("Usage: atpm [command]")
+    print()
+    print("    info")
+    print("        show information for all package dependencies")
+    print()
+    print("    fetch")
+    print("        fetch new packages, does not touch already fetched packages")
+    print()
+    print("    update")
+    print("        update already fetched packages (if they are not pinned)")
+    print()
+    print("    pin <package-name>")
+    print("        pin current package status of <package-name> and record in lock file")
+    print()
+    print("    unpin <package-name>")
+    print("        unpin status of <package-name>")
+    print()
+    print("    override <package-name> <new-url>")
+    print("        override git url of <package-name> to <new-url>")
+    print()
+    print("    restore <package-name>")
+    print("        remove git url override of <package-name>")
+    print()
 }
 
 //usage message
@@ -253,7 +266,7 @@ case "info":
 case "fetch":
     let packages = fetch(package, lock: lockFile)
     if packages.count > 0 {
-        if let conflicts = validateVersions(packages) {
+        if let conflicts = validateVersions(packages: packages) {
             print("Can not solve the version graph. The following conflicts were detected:")
             for (package, versions) in conflicts {
                 print(" - Package: \(package) -> \(versions)")
@@ -266,7 +279,7 @@ case "fetch":
 case "update":
     let packages = update(package, lock: lockFile)
     if packages.count > 0 {
-        if let conflicts = validateVersions(packages) {
+        if let conflicts = validateVersions(packages: packages) {
             print("Can not solve the version graph. The following conflicts were detected:")
             for (package, versions) in conflicts {
                 print(" - Package: \(package) -> \(versions)")
@@ -303,14 +316,18 @@ case "override":
             writeLockFile(packages, lock: lockFile)
         }
         exit(0)
-    } else if Process.arguments.count == 3 {
+    } else {
+        print("Usage: atpm override <package-name> <overridden-url>")
+    }
+case "restore":
+    if Process.arguments.count == 3 {
         let packages = overrideURL(package, lock: lockFile, name: Process.arguments[2], newURL: nil)
         if packages.count > 0 {
             writeLockFile(packages, lock: lockFile)
         }
         exit(0)
     } else {
-        print("Usage: atpm override <package-name> [<overridden-url>]")
+        print("Usage: atpm restore <package-name>")
     }
 default:
     help()

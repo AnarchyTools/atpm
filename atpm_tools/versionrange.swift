@@ -43,7 +43,7 @@ public class VersionRange {
 	public init() {
 	}
 
-	public func combine(versionString: String) throws {
+	public func combine(_ versionString: String) throws {
 		if versionString.hasPrefix(">=") {
             let tmp = Version(string: versionString.substring(from: versionString.startIndex.advanced(by:2)))
 			if self.min != nil {
@@ -135,7 +135,7 @@ public class VersionRange {
         }
 	}
 
-	public func versionInRange(version: Version) -> Bool {
+	public func versionInRange(_ version: Version) -> Bool {
         var valid = true
         if let min = self.min {
             if self.minInclusive! {
@@ -176,7 +176,7 @@ extension VersionRange: CustomStringConvertible {
 			}
 			if self.min != nil && self.max != nil {
 				result += ", "
-			}	
+			}
 			if let max = self.max {
 				if self.maxInclusive == true {
 					result += "<=\(max)"

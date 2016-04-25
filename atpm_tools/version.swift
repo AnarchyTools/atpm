@@ -24,10 +24,10 @@ public class Version {
     public var minor: Int
     public var patch: Int
     public var ext: String
-    
+
     public var outputMinor: Bool = false
     public var outputPatch: Bool = false
-    
+
     private enum ParserState {
     case Major
     case Minor
@@ -36,15 +36,15 @@ public class Version {
     case Invalid
     case Finished
     }
-    
+
     public init(string: String) {
         var gen = string.characters.makeIterator()
-        
+
         self.major = 0
         self.minor = 0
         self.patch = 0
         self.ext = ""
-        
+
         var state:ParserState = .Major
         while let c = gen.next() {
             switch state {
@@ -65,16 +65,16 @@ public class Version {
             }
         }
     }
-    
+
     public init(major: Int, minor: Int, patch: Int = 0, ext: String = "") {
         self.major = major
         self.minor = minor
         self.patch = patch
         self.ext = ext
     }
-    
+
     @inline(__always)
-    private func parseMajor(c: Character) -> ParserState {
+    private func parseMajor(_ c: Character) -> ParserState {
         switch c {
         case "v", "V":
             break
@@ -87,9 +87,9 @@ public class Version {
         }
         return .Major
     }
-    
+
     @inline(__always)
-    private func parseMinor(c: Character) -> ParserState  {
+    private func parseMinor(_ c: Character) -> ParserState  {
         switch c {
         case "0"..."9":
             self.minor = self.minor * 10 + (Int(c) - 48)
@@ -104,7 +104,7 @@ public class Version {
     }
 
     @inline(__always)
-    private func parsePatch(c: Character) -> ParserState  {
+    private func parsePatch(_ c: Character) -> ParserState  {
         switch c {
         case "0"..."9":
             self.patch = self.patch * 10 + (Int(c) - 48)
@@ -117,7 +117,7 @@ public class Version {
     }
 
     @inline(__always)
-    private func parseExt(c: Character) -> ParserState  {
+    private func parseExt(_ c: Character) -> ParserState  {
         if c == "\n" {
             return .Finished
         }

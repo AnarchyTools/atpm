@@ -50,7 +50,7 @@
       :sources ["atpm/src/**.swift"]
       :name "atpm"
       :output-type "executable"
-      :link-with ["atpkg.a" "atpm_tools.a"]
+      :link-with ["atpkg.a" "atpm_tools.a" "atfoundation.a"]
       :dependencies ["atpkg.atpkg" "atpmtools"]
       :publish-product true
       :compile-options ["-DDEBUG" "-g"]
@@ -90,5 +90,5 @@
       :test-executable ".atllbuild/products/tests"
       :dependencies ["build-tests"]
     }
-  } 
+  }
 )

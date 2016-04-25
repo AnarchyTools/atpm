@@ -44,7 +44,9 @@ Usage:
 
 `atpm override <packagename> <GIT-URL>` override the git repo URL for a package
 
-`atpm override <packagename>` remove URL override for a package
+## restore
+
+`atpm restore <packagename>` remove URL override for a package
 
 # Configuration
 
