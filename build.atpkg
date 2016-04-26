@@ -27,6 +27,8 @@
     :atpmtools {
       :tool "atllbuild"
       :sources ["atpm_tools/**.swift"]
+      :link-with ["atfoundation.a"]
+      :dependencies ["atfoundation.atfoundation"]
       :name "atpm_tools"
       :output-type "static-library"
       :compile-options ["-enable-testing" "-DDEBUG" "-g"]

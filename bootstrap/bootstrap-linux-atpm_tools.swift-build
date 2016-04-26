@@ -10,8 +10,8 @@ commands:
   <atllbuild-swiftc>:
      tool: swift-compiler
      executable: "/usr/local/bin/swiftc"
-     inputs: ["atpm_tools/version.swift", "atpm_tools/versionrange.swift"]
-     sources: ["atpm_tools/version.swift", "atpm_tools/versionrange.swift"]
+     inputs: [atpm_tools/version.swift, atpm_tools/versionrange.swift]
+     sources: [atpm_tools/version.swift, atpm_tools/versionrange.swift]
      objects: [".atllbuild/objects/version.swift.o", ".atllbuild/objects/versionrange.swift.o"]
      outputs: ["<atllbuild-swiftc>", ".atllbuild/objects/version.swift.o", ".atllbuild/objects/versionrange.swift.o"]
      is-library: true
