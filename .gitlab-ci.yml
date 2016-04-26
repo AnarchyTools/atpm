@@ -10,7 +10,7 @@ linux:
         - curl -L https://github.com/AnarchyTools/atbuild/releases/download/0.10.0/atbuild-0.10.0-linux.tar.xz | tar xJ
         - cp atbuild-*/atbuild /usr/local/bin/
         - atbuild check
-        - atbuild atpm
+        - atbuild atpm --use-overlay static
         - mkdir atpm-${CI_BUILD_REF}
         - cp bin/atpm atpm-${CI_BUILD_REF}
         - tar cJf atpm-${CI_BUILD_REF}-linux.tar.xz atpm-${CI_BUILD_REF}
@@ -26,7 +26,7 @@ osx:
     script:
         - git submodule update --recursive --init
         - atbuild check
-        - atbuild atpm
+        - atbuild atpm --use-overlay static
         - mkdir atpm-${CI_BUILD_REF}
         - cp bin/atpm atpm-${CI_BUILD_REF}
         - tar cJf atpm-${CI_BUILD_REF}-osx.tar.xz atpm-${CI_BUILD_REF}
