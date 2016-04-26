@@ -17,6 +17,9 @@ linux:
     tags:
         - autoscale-linux
     image: drewcrawford/swift:latest
+    artifacts:
+        paths:
+            - atpm-${CI_BUILD_REF}-linux.tar.xz
 
 osx:
     stage: build
@@ -26,7 +29,10 @@ osx:
         - atbuild atpm
         - mkdir atpm-${CI_BUILD_REF}
         - cp bin/atpm atpm-${CI_BUILD_REF}
-        - tar cJf atpm-${CI_BUILD_REF}-linux.tar.xz atpm-${CI_BUILD_REF}
+        - tar cJf atpm-${CI_BUILD_REF}-osx.tar.xz atpm-${CI_BUILD_REF}
     tags:
         - openswift
         - atbuild
+    artifacts:
+        paths:
+            - atpm-${CI_BUILD_REF}-osx.tar.xz
