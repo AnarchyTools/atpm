@@ -1,26 +1,4 @@
-import Foundation
-
-//SR-138
-#if os(Linux)
-extension String {
-    public func substring(with range: Range<String.Index>) -> String {
-        var result = ""
-        result.reserveCapacity(range.count)
-        for idx in range {
-            result.append(self.characters[idx])
-        }
-        return result
-    }
-
-    public func substring(to index: String.Index) -> String {
-        return self.substring(with: self.startIndex..<index)
-    }
-
-    public func substring(from index: String.Index) -> String {
-        return self.substring(with: index..<self.endIndex)
-    }
-}
-#endif
+import atfoundation
 
 public class VersionRange {
 	public var min: Version?
@@ -45,7 +23,7 @@ public class VersionRange {
 
 	public func combine(_ versionString: String) throws {
 		if versionString.hasPrefix(">=") {
-            let tmp = Version(string: versionString.substring(from: versionString.startIndex.advanced(by:2)))
+            let tmp = Version(string: versionString.subString(fromIndex: versionString.startIndex.advanced(by:2)))
 			if self.min != nil {
 				if (tmp == self.min! && self.minInclusive == false) || tmp < self.min! {
 					return
@@ -59,7 +37,7 @@ public class VersionRange {
 			self.min = tmp
 			self.minInclusive = true
         } else if versionString.hasPrefix(">") {
-            let tmp = Version(string: versionString.substring(from: versionString.startIndex.advanced(by:1)))
+            let tmp = Version(string: versionString.subString(fromIndex: versionString.startIndex.advanced(by:1)))
 			if self.min != nil {
 				if tmp < self.min! {
 					return
@@ -73,7 +51,7 @@ public class VersionRange {
 			self.min = tmp
             self.minInclusive = false
         } else if versionString.hasPrefix("<=") {
-            let tmp = Version(string: versionString.substring(from: versionString.startIndex.advanced(by:2)))
+            let tmp = Version(string: versionString.subString(fromIndex: versionString.startIndex.advanced(by:2)))
 			if self.max != nil {
 				if (tmp == self.max! && self.maxInclusive == false) || tmp > self.max! {
 					return
@@ -87,7 +65,7 @@ public class VersionRange {
 			self.max = tmp
             self.maxInclusive = true
         } else if versionString.hasPrefix("<") {
-            let tmp = Version(string: versionString.substring(from: versionString.startIndex.advanced(by:1)))
+            let tmp = Version(string: versionString.subString(fromIndex: versionString.startIndex.advanced(by:1)))
 			if self.max != nil {
 				if tmp > self.max! {
 					return
@@ -101,7 +79,7 @@ public class VersionRange {
 			self.max = tmp
             self.maxInclusive = false
         } else if versionString.hasPrefix("==") {
-            let tmp = Version(string: versionString.substring(from: versionString.startIndex.advanced(by:2)))
+            let tmp = Version(string: versionString.subString(fromIndex: versionString.startIndex.advanced(by:2)))
             if self.max != nil {
             	if tmp > self.max! {
 					throw VersionRange.Error.CombiningFailed
