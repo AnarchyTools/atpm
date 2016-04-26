@@ -87,7 +87,7 @@
       :dependencies ["atpmtools"]
       :xctestify true
       :xctest-strict true
-      :link-with ["atpm_tools.a"]
+      :link-with ["atpm_tools.a" "atfoundation.a"]
     }
 
     :run-tests {
