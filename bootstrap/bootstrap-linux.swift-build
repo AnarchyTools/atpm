@@ -10,17 +10,17 @@ commands:
   <atllbuild-swiftc>:
      tool: swift-compiler
      executable: "/usr/local/bin/swiftc"
-     inputs: ["atpm/src/main.swift"]
-     sources: ["atpm/src/main.swift"]
-     objects: [".atllbuild/objects/main.swift.o"]
-     outputs: ["<atllbuild-swiftc>", ".atllbuild/objects/main.swift.o"]
+     inputs: [atpm/src/error.swift, atpm/src/git.swift, atpm/src/lockfile.swift, atpm/src/main.swift, atpm/src/validate.swift]
+     sources: [atpm/src/error.swift, atpm/src/git.swift, atpm/src/lockfile.swift, atpm/src/main.swift, atpm/src/validate.swift]
+     objects: [".atllbuild/objects/error.swift.o", ".atllbuild/objects/git.swift.o", ".atllbuild/objects/lockfile.swift.o", ".atllbuild/objects/main.swift.o", ".atllbuild/objects/validate.swift.o"]
+     outputs: ["<atllbuild-swiftc>", ".atllbuild/objects/error.swift.o", ".atllbuild/objects/git.swift.o", ".atllbuild/objects/lockfile.swift.o", ".atllbuild/objects/main.swift.o", ".atllbuild/objects/validate.swift.o"]
      module-name: atpm
      module-output-path: .atllbuild/products/atpm.swiftmodule
-     temps-path: .atllbuild//llbuildtmp
-     other-args: ["-j8", "-D", "ATBUILD", "-I", ".atllbuild/products/"]
+     temps-path: .atllbuild/llbuildtmp
+     other-args: ["-j8", "-D", "ATBUILD", "-I", ".atllbuild/products/", "-DDEBUG", "-g"]
   <atllbuild>:
     tool: shell
-    inputs: ["<atllbuild-swiftc>", ".atllbuild/objects/main.swift.o", ".atllbuild/products/atpkg.a", ".atllbuild/products/atpm_tools.a"]
+    inputs: ["<atllbuild-swiftc>", ".atllbuild/objects/error.swift.o", ".atllbuild/objects/git.swift.o", ".atllbuild/objects/lockfile.swift.o", ".atllbuild/objects/main.swift.o", ".atllbuild/objects/validate.swift.o", ".atllbuild/products/atpkg.a", ".atllbuild/products/atpm_tools.a", ".atllbuild/products/atfoundation.a"]
     outputs: ["<atllbuild>", ".atllbuild/products/atpm"]
-    args: ["/usr/local/bin/swiftc", "-o", ".atllbuild/products/atpm", ".atllbuild/objects/main.swift.o", ".atllbuild/products/atpkg.a", ".atllbuild/products/atpm_tools.a"]
+    args: ["/usr/local/bin/swiftc", "-o", ".atllbuild/products/atpm", ".atllbuild/objects/error.swift.o", ".atllbuild/objects/git.swift.o", ".atllbuild/objects/lockfile.swift.o", ".atllbuild/objects/main.swift.o", ".atllbuild/objects/validate.swift.o", ".atllbuild/products/atpkg.a", ".atllbuild/products/atpm_tools.a", ".atllbuild/products/atfoundation.a"]
     description: Linking executable .atllbuild/products/atpm

@@ -10,13 +10,33 @@ Then you can check the program was built successfully:
 
 ```bash
 $ ./atpm --help
-atpm - Anarchy Tools Package Manager 0.1.0-dev
+atpm - Anarchy Tools Package Manager 1.0.0-GM1
 https://github.com/AnarchyTools
 © 2016 Anarchy Tools Contributors.
 
-Usage:
-atpm [task]
-    task: ["info", "fetch", "update", "add", "install", "uninstall"]
+Usage: atpm [command]
+
+    info
+        show information for all package dependencies
+
+    fetch
+        fetch new packages, does not touch already fetched packages
+
+    update
+        update already fetched packages (if they are not pinned)
+
+    pin <package-name>
+        pin current package status of <package-name> and record in lock file
+
+    unpin <package-name>
+        unpin status of <package-name>
+
+    override <package-name> <new-url>
+        override git url of <package-name> to <new-url>
+
+    restore <package-name>
+        remove git url override of <package-name>
+
 ```
 
 # Usage
@@ -33,36 +53,37 @@ atpm [task]
 
 `atpm update` updates all external dependencies in `external/`, it does not download new or missing dependencies
 
-## add (not implemented yet)
+## pin 
 
-`atpm add <GIT-URL>` dumps information about how to add the external dependency that can be found at `<GIT-URL>`
+`atpm pin <packagename>` pin a package to a defined git commit id
 
-## install (not implemented yet)
+## unpin
 
-`atpm install <GIT-URL>` fetches and compiles the package from `<GIT-URL>` into `install/`
+`atpm unpin <packagename>` unpin a commit id for a package
 
-Add parameter `--destination <dest>` after the URL to install to another directory
+## override
 
-## uninstall (non implemented yet)
+`atpm override <packagename> <GIT-URL>` override the git repo URL for a package
 
-`atpm install <GIT-URL>` fetches the package from `<GIT-URL>` and removes all files the package installed
+## restore
 
-Add parameter `--destination <dest>` after the URL to specify a different destination directory (see install above)
+`atpm restore <packagename>` remove URL override for a package
 
 # Configuration
 
 To configure a dependency in a `build.atpkg` file add the following statements to the top level (just after `:name`):
 
 ```clojure
-:externals [
+:external-packages [
     {
         :url "https://github.com/AnarchyTools/atpkg.git"
-        :branch "master"
+        :version [ "1.0.0" ]
     }
 ]
 ```
 
 - `:url` is required and a valid URL to a git repository
+
 - `:branch` is optional and defines which branch to check out
 - `:tag` is optional and defines which git tag to check out
 - `:commit` defines a commit id
@@ -72,7 +93,7 @@ You need one of `:branch`, `:tag`, `:commit` or `:version`
 
 # Usage in `build.atpkg`
 
-All dependencies are handled as if you issued a `:import ["externals/<pkgname>/build.atpkg"]` statement in the build file.
+All dependencies are handled as if you issued a `:import ["external/<pkgname>/build.atpkg"]` statement in the build file.
 
 Example:
 
@@ -80,10 +101,10 @@ Example:
 (package
   :name "test"
 
-  :externals [
+  :external-packages [
     {
       :url "https://github.com/AnarchyTools/atpkg.git"
-      :branch "master"
+      :version [ "1.0.0" ]
     }
   ]
 
@@ -92,8 +113,8 @@ Example:
         :tool "atllbuild"
         :source ["src/**.swift"]
         :name "test"
-        :outputType "executable"
-        :linkWithProduct ["atpkg.a"]
+        :output-type "executable"
+        :link-with ["atpkg.a"]
         :dependencies ["atpkg.atpkg"]
     }
   }

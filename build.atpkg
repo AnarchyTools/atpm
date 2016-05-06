@@ -27,6 +27,8 @@
     :atpmtools {
       :tool "atllbuild"
       :sources ["atpm_tools/**.swift"]
+      :link-with ["atfoundation.a"]
+      :dependencies ["atfoundation.atfoundation"]
       :name "atpm_tools"
       :output-type "static-library"
       :compile-options ["-enable-testing" "-DDEBUG" "-g"]
@@ -50,7 +52,7 @@
       :sources ["atpm/src/**.swift"]
       :name "atpm"
       :output-type "executable"
-      :link-with ["atpkg.a" "atpm_tools.a"]
+      :link-with ["atpkg.a" "atpm_tools.a" "atfoundation.a"]
       :dependencies ["atpkg.atpkg" "atpmtools"]
       :publish-product true
       :compile-options ["-DDEBUG" "-g"]
@@ -66,13 +68,15 @@
           :link-sdk false
           :llbuildyaml "bootstrap/bootstrap-linux.swift-build"
         }
+        :static {
+          :link-options ["-static-stdlib"]
+        }
       }
     }
 
     :check {
-      :tool "shell"
-      :script "./tests/atpm/test.sh"
-      :dependencies ["default"]
+      :tool "nop"
+      :dependencies ["run-tests"]
     }
 
     :build-tests {
@@ -83,7 +87,7 @@
       :dependencies ["atpmtools"]
       :xctestify true
       :xctest-strict true
-      :link-with ["atpm_tools.a"]
+      :link-with ["atpm_tools.a" "atfoundation.a"]
     }
 
     :run-tests {
@@ -91,5 +95,5 @@
       :test-executable ".atllbuild/products/tests"
       :dependencies ["build-tests"]
     }
-  } 
+  }
 )

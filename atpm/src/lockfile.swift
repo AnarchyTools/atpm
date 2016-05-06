@@ -11,7 +11,8 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import Foundation
+
+import atfoundation
 import atpkg
 
 enum LockFileError: ErrorProtocol {
@@ -21,7 +22,7 @@ enum LockFileError: ErrorProtocol {
 }
 
 final public class LockedPackage {
-    public let url: String
+    public let url: URL
     private(set) public var usedCommitID: String
     private(set) public var pinnedCommitID: String? = nil
     private(set) public var overrideURL:String?     = nil
@@ -42,7 +43,7 @@ final public class LockedPackage {
         }
     }
 
-    init(url: String, usedCommitID: String, pinnedCommitID: String? = nil, overrideURL: String? = nil) {
+    init(url: URL, usedCommitID: String, pinnedCommitID: String? = nil, overrideURL: String? = nil) {
         self.url = url
         self.usedCommitID = usedCommitID
         self.pinnedCommitID = pinnedCommitID
@@ -52,9 +53,10 @@ final public class LockedPackage {
     init?(package: ParseValue) {
         guard let kvp = package.map else { return nil }
 
-        guard let url = kvp[Option.URL.rawValue]?.string else {
+        guard let urlString = kvp[Option.URL.rawValue]?.string else {
             fatalError("No URL for locked package; did you forget to specify it?")
         }
+        let url = URL(string: urlString)
         guard let usedCommitID = kvp[Option.UsedCommit.rawValue]?.string else {
             fatalError("No commit ID for locked package; did you forget to specify it?")
         }
@@ -78,7 +80,7 @@ final public class LockedPackage {
         result.append("{")
         result.append("  :\(Option.URL.rawValue) \"\(self.url)\"")
         result.append("  :\(Option.UsedCommit.rawValue) \"\(self.usedCommitID)\"")
-        
+
         if let pinnedCommitID = self.pinnedCommitID {
             result.append("  :\(Option.PinCommit.rawValue) \"\(pinnedCommitID)\"")
         }
@@ -88,7 +90,7 @@ final public class LockedPackage {
         }
         result.append("}")
         return result
-    }    
+    }
 }
 
 public func == (lhs: LockedPackage, rhs: LockedPackage) -> Bool {
@@ -116,8 +118,8 @@ final public class LockFile {
 
     public var packages: [LockedPackage] = []
 
-    public convenience init(filepath: String) throws {
-        guard let parser = Parser(filepath: filepath) else { throw LockFileError.ParserFailed }
+    public convenience init(filepath: Path) throws {
+        guard let parser = try Parser(filepath: filepath) else { throw LockFileError.ParserFailed }
         let result = try parser.parse()
         try self.init(type: result)
     }
@@ -147,7 +149,7 @@ final public class LockFile {
     public init() {
     }
 
-    public subscript(url: String) -> LockedPackage? {
+    public subscript(url: URL) -> LockedPackage? {
         get {
             for lock in self.packages {
                 if lock.url == url {
@@ -197,15 +199,7 @@ final public class LockFile {
         for pkg in self.packages {
             let serialized = pkg.serialize()
             for line in serialized {
-                result += "    \(line)"
-                if line != serialized.last! {
-                    result += "\n"
-                }
-            }
-            if pkg != self.packages.last! {
-                result += ",\n"
-            } else {
-                result += "\n"
+                result += "    \(line)\n"
             }
         }
 

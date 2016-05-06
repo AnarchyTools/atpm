@@ -1,4 +1,4 @@
-import Foundation
+import atfoundation
 import atpkg
 import atpm_tools
 
@@ -19,7 +19,7 @@ func ==(lhs:ExternalDependency.VersioningMethod, rhs: ExternalDependency.Version
 //
 // Returns `nil` if everything was ok
 func validateVersions(packages: [ExternalDependency]) -> [String:[ExternalDependency.VersioningMethod]]? {
-	var grouped = [String:[ExternalDependency]]()
+	var grouped = [URL:[ExternalDependency]]()
 	for p in packages {
 		if grouped[p.gitURL] == nil {
 			grouped[p.gitURL] = [ExternalDependency]()
