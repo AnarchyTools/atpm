@@ -99,7 +99,11 @@ func update(_ package: Package, lock: LockFile?) -> [ExternalDependency] {
         print("Updating external dependency \(pkg.name)...")
         do {
             try updateDependency(pkg, lock: lock?[pkg.gitURL])
-            try FS.symlinkItem(from: Path(".."), to: Path("external/\(pkg.name)/external"))
+            do {
+                try FS.symlinkItem(from: Path(".."), to: Path("external/\(pkg.name)/external"))
+            } catch SysError.FileExists {
+                // just ignore this error as the symlink may exist from previous calls
+            }
             let subPackagePath = Path("external/\(pkg.name)/build.atpkg")
             do {
                 let p = try Package(filepath: subPackagePath, overlay: [], focusOnTask: nil)
@@ -109,7 +113,7 @@ func update(_ package: Package, lock: LockFile?) -> [ExternalDependency] {
                 print("Unable to load build file '\(subPackagePath)': \(error)")
             }
         } catch {
-            print("ERROR: Could not fetch \(pkg.name): \(error)")
+            print("ERROR: Could not update \(pkg.name): \(error)")
             return packages
         }
     }
