@@ -173,7 +173,7 @@ func getCurrentCommitID(_ pkg: ExternalDependency) -> String? {
             break
         }
         if let commitID = String(validatingUTF8: buffer) {
-            return commitID.subString(toIndex: commitID.startIndex.advanced(by:commitID.characters.count - 1))
+            return commitID.subString(toIndex: commitID.index(commitID.startIndex, offsetBy: commitID.characters.count - 1))
         }
     }
     return nil
