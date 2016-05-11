@@ -80,6 +80,7 @@
       :atllbuild-task "atpm"
       :platforms ["all"]
       :name "atpm"
+      :compress true
     }
 
     :package-linux {
