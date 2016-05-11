@@ -17,6 +17,7 @@
 (package
   :name "atpm"
   :import-packages ["atpkg/build.atpkg"]
+  :version "1.0.1"
 
   :tasks {
     :default {
@@ -72,6 +73,35 @@
           :link-options ["-static-stdlib"]
         }
       }
+    }
+
+    :atbin {
+      :tool "packageatbin"
+      :atllbuild-task "atpm"
+      :platforms ["all"]
+      :name "atpm"
+    }
+
+    :package-linux {
+      :only-platforms ["linux"]
+      :tool "package-deb.attool"
+      :name "atpm"
+      :dependencies ["atbin"]
+      :depends "git"
+    }
+
+
+    :package-osx {
+      :only-platforms ["osx"]
+      :tool "package-homebrew.attool"
+      :dependencies ["atbin"]
+      :name "atpm"
+      :github-project "AnarchyTools/atpm"
+    }
+
+    :package {
+      :tool "nop"
+      :dependencies ["package-linux" "package-osx"]
     }
 
     :check {
