@@ -7,7 +7,7 @@ linux:
         - apt-get update
         - apt-get install --no-install-recommends xz-utils curl git ca-certificates -y
         - curl -s https://packagecloud.io/install/repositories/anarchytools/AT/script.deb.sh | bash
-        - apt-get install atbuild --install-suggests
+        - apt-get install atbuild package-deb -y
         - git submodule update --recursive --init
         - atbuild check
         - atbuild package --use-overlay static
