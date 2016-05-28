@@ -8,6 +8,17 @@ ATPM="$(pwd)/.atllbuild/products/atpm"
 pwd
 
 #
+# Binary dependencies test
+#
+echo "*** Binary dependencies ***"
+pushd "$DIR/binary"
+$ATPM fetch
+popd
+
+echo "pwd"
+pwd
+
+#
 # Simple dependency fetcher
 #
 

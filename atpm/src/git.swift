@@ -17,7 +17,7 @@ private func logAndExecute(command: String) -> Int32 {
 // - v*.*.*
 // - v*.*
 func fetchVersions(_ pkg: ExternalDependency) -> [Version] {
-    let fp = popen("cd 'external/\(pkg.name)' && git tag -l *.*.* -l *.* -l v*.*.* -l v*.*", "r")
+    let fp = popen("cd 'external/\(pkg.name!)' && git tag -l *.*.* -l *.* -l v*.*.* -l v*.*", "r")
     guard fp != nil else {
         return []
     }
@@ -41,20 +41,20 @@ func fetchVersions(_ pkg: ExternalDependency) -> [Version] {
 // Update an already checked out repository
 //
 // Returns `false` if repo does not exist or if a `git fetch origin` fails
-func updateDependency(_ pkg: ExternalDependency, lock: LockedPackage?, firstTime: Bool = false) throws {
-    if !FS.fileExists(path: Path("external/\(pkg.name)")) {
+func updateGitDependency(_ pkg: ExternalDependency, lock: LockedPackage?, firstTime: Bool = false) throws {
+    if !FS.fileExists(path: Path("external/\(pkg.name!)")) {
         throw PMError.MissingPackageCheckout
     }
 
-    let fetchResult = logAndExecute(command: "cd 'external/\(pkg.name)' && git fetch --tags origin")
+    let fetchResult = logAndExecute(command: "cd 'external/\(pkg.name!)' && git fetch --tags origin")
     if fetchResult != 0 {
         throw PMError.GitError(exitCode: fetchResult)
     }
 
     // If we are pinned only checkout that commit
-    if let lock = lock where lock.pinnedCommitID != nil {
-        print("Package \(pkg.name) is pinned to \(lock.pinnedCommitID!)")
-        let pullResult = logAndExecute(command: "cd 'external/\(pkg.name)' && git checkout '\(lock.pinnedCommitID!)'")
+    if let lock = lock where lock.gitPayload.pinnedCommitID != nil {
+        print("Package \(pkg.name!) is pinned to \(lock.gitPayload.pinnedCommitID!)")
+        let pullResult = logAndExecute(command: "cd 'external/\(pkg.name!)' && git checkout '\(lock.gitPayload.pinnedCommitID!)'")
         if pullResult != 0 {
             throw PMError.GitError(exitCode: pullResult)
         }
@@ -63,8 +63,8 @@ func updateDependency(_ pkg: ExternalDependency, lock: LockedPackage?, firstTime
 
     // on first time checkout only pull the commit that has been logged in the lockfile
     if let lock = lock where firstTime == true {
-        print("Fetching commit as defined in lock file for \(pkg.name): \(lock.usedCommitID)")
-        let pullResult = logAndExecute(command: "cd 'external/\(pkg.name)' && git checkout '\(lock.usedCommitID)'")
+        print("Fetching commit as defined in lock file for \(pkg.name!): \(lock.gitPayload.usedCommitID!)")
+        let pullResult = logAndExecute(command: "cd 'external/\(pkg.name!)' && git checkout '\(lock.gitPayload.usedCommitID!)'")
         if pullResult != 0 {
             throw PMError.GitError(exitCode: pullResult)
         }
@@ -73,17 +73,17 @@ func updateDependency(_ pkg: ExternalDependency, lock: LockedPackage?, firstTime
 
     switch pkg.version {
     case .Branch(let branch):
-        let pullResult = logAndExecute(command: "cd 'external/\(pkg.name)' && git checkout '\(branch)' && git pull origin")
+        let pullResult = logAndExecute(command: "cd 'external/\(pkg.name!)' && git checkout '\(branch)' && git pull origin")
         if pullResult != 0 {
             throw PMError.GitError(exitCode: pullResult)
         }
     case .Tag(let tag):
-        let pullResult = logAndExecute(command: "cd 'external/\(pkg.name)' && git checkout '\(tag)'")
+        let pullResult = logAndExecute(command: "cd 'external/\(pkg.name!)' && git checkout '\(tag)'")
         if pullResult != 0 {
             throw PMError.GitError(exitCode: pullResult)
         }
     case .Commit(let commitID):
-        let pullResult = logAndExecute(command: "cd 'external/\(pkg.name)' && git checkout '\(commitID)'")
+        let pullResult = logAndExecute(command: "cd 'external/\(pkg.name!)' && git checkout '\(commitID)'")
         if pullResult != 0 {
             throw PMError.GitError(exitCode: pullResult)
         }
@@ -93,30 +93,14 @@ func updateDependency(_ pkg: ExternalDependency, lock: LockedPackage?, firstTime
         for ver in version {
             try versionRange.combine(ver)
         }
-        var versions = fetchVersions(pkg)
+        let versions = fetchVersions(pkg)
 
-        do {
-            versions = try versions.filter { version throws -> Bool in
-                return versionRange.versionInRange(version)
-            }
-
-            versions.sort(isOrderedBefore: { (v1, v2) -> Bool in
-                return v1 < v2
-            })
-
-            if versions.count > 0 {
-                print("Valid versions: \(versions), using \(versions.last!)")
-                let pullResult = logAndExecute(command: "cd 'external/\(pkg.name)' && git checkout '\(versions.last!)'")
-                if pullResult != 0 {
-                    throw PMError.GitError(exitCode: pullResult)
-                }
-            } else {
-                print("No valid versions for \(pkg.name)!")
-            }
-        } catch PMError.GitError(let exitCode) {
-            throw PMError.GitError(exitCode: exitCode)
-        } catch {
+        guard let version = try chooseVersion(versions: versions, versionRange: versionRange) else {
             throw PMError.InvalidVersion
+        }
+        let pullResult = logAndExecute(command: "cd 'external/\(pkg.name!)' && git checkout '\(version)'")
+            if pullResult != 0 {
+                throw PMError.GitError(exitCode: pullResult)
         }
     }
 }
@@ -125,54 +109,52 @@ func updateDependency(_ pkg: ExternalDependency, lock: LockedPackage?, firstTime
 //
 // This only checks out the default branch and calls updateDependency() for
 // fetching the correct branch/tag
-func fetchDependency(_ pkg: ExternalDependency, lock: LockedPackage?) throws {
-    if FS.fileExists(path: Path("external/\(pkg.name)")) {
-        print("Already downloaded")
-        return
-    }
-
-    let ext = Path("external")
-    if !FS.fileExists(path: ext) {
-        try FS.createDirectory(path: ext)
-    }
+func fetchGitDependency(_ pkg: ExternalDependency, lock: LockedPackage?) throws {
 
     // If the url has been overridden checkout that repo instead
-    if let lock = lock where lock.overrideURL != nil {
-        print("Package \(pkg.name) repo URL overridden: \(lock.overrideURL!)")
-        let cloneResult = logAndExecute(command: "git clone --recurse-submodules '\(lock.overrideURL!)' 'external/\(pkg.name)'")
+    if let lock = lock where lock.gitPayload.overrideURL != nil {
+        print("Package \(pkg.name!) repo URL overridden: \(lock.gitPayload.overrideURL!)")
+        let cloneResult = logAndExecute(command: "git clone --recurse-submodules '\(lock.gitPayload.overrideURL!)' 'external/\(pkg.name!)'")
         if cloneResult != 0 {
             throw PMError.GitError(exitCode: cloneResult)
         }
         return
     }
 
-    let cloneResult = logAndExecute(command: "git clone --recurse-submodules '\(pkg.gitURL)' 'external/\(pkg.name)'")
+    let cloneResult = logAndExecute(command: "git clone --recurse-submodules '\(pkg.url)' 'external/\(pkg.name!)'")
     if cloneResult != 0 {
         throw PMError.GitError(exitCode: cloneResult)
     }
 
     try updateDependency(pkg, lock: lock, firstTime: true)
 }
-
+func updateGitLockPackage(pkg: ExternalDependency, lockedPackage: inout LockedPackage) {
+    print("updateGL \(pkg)")
+        guard let usedCommitID = getCurrentCommitID(pkg) else {
+            print("ERROR: Corrupt git repository for package \(pkg.name!)")
+            exit(1)
+        }
+        lockedPackage.gitPayload.usedCommitID = usedCommitID
+}
 func getCurrentCommitID(_ pkg: ExternalDependency) -> String? {
-    if !FS.fileExists(path: Path("external/\(pkg.name)")) {
+    if !FS.fileExists(path: Path("external/\(pkg.name!)")) {
+        print("here")
         return nil
     }
-
-    let fp = popen("cd 'external/\(pkg.name)' && git rev-parse HEAD", "r")
+    let fp = popen("cd 'external/\(pkg.name!)' && git rev-parse HEAD", "r")
     guard fp != nil else {
         return nil
     }
     defer {
-        fclose(fp)
+        pclose(fp)
     }
-
     var buffer = [CChar](repeating: 0, count: 255)
     while feof(fp) == 0 {
         if fgets(&buffer, 255, fp) == nil {
             break
         }
         if let commitID = String(validatingUTF8: buffer) {
+            print("returning \(commitID)")
             return commitID.subString(toIndex: commitID.index(commitID.startIndex, offsetBy: commitID.characters.count - 1))
         }
     }

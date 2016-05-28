@@ -21,6 +21,7 @@ import atpm_tools
 let defaultBuildFile = Path("build.atpkg")
 let defaultLockFile = Path("build.atlock")
 
+
 func loadPackageFile() -> Package {
     do {
         return try Package(filepath: defaultBuildFile, overlay: [], focusOnTask: nil)
@@ -47,7 +48,7 @@ func info(_ package: Package, indent: Int = 4) -> Bool {
         for _ in 0..<indent {
             out += " "
         }
-        out += "- \(dep.gitURL)"
+        out += "- \(dep.url)"
         print(out)
 
         let subPackagePath = Path("external/\(dep.name)/build.atpkg")
@@ -68,24 +69,33 @@ func info(_ package: Package, indent: Int = 4) -> Bool {
 
 func fetch(_ package: Package, lock: LockFile?) -> [ExternalDependency] {
     var packages = [ExternalDependency]()
-
     for pkg in package.externals {
-        print("Fetching external dependency \(pkg.name)...")
+        print("Fetching external dependency \(pkg.name ?? "\(pkg.url)")...")
         do {
-            try fetchDependency(pkg, lock: lock?[pkg.gitURL])
+            try fetchDependency(pkg, lock: lock?[pkg.url])
 
-            try FS.symlinkItem(from: Path(".."), to: Path("external/\(pkg.name)/external"))
-            let subPackagePath = Path("external/\(pkg.name)/build.atpkg")
             do {
-                let p = try Package(filepath: subPackagePath, overlay: [], focusOnTask: nil)
-                packages.append(pkg)
-                packages += fetch(p, lock: lock)
-            } catch {
-                print("Unable to load build file '\(subPackagePath)': \(error)")
-                continue
+                try FS.symlinkItem(from: Path(".."), to: Path("external/\(pkg.name!)/external"))
             }
+        catch SysError.FileExists { /* */ }
+            let subPackagePath = Path("external/\(pkg.name!)/build.atpkg")
+            switch(pkg.dependencyType) {
+                case .Git:
+                do {
+                    let p = try Package(filepath: subPackagePath, overlay: [], focusOnTask: nil)
+                    packages.append(pkg)
+                    packages += fetch(p, lock: lock)
+                } catch {
+                    print("Unable to load build file '\(subPackagePath)': \(error)")
+                    continue
+                }
+
+                case .Manifest:
+                packages.append(pkg)
+            }
+            
         } catch {
-            print("ERROR: Could not fetch \(pkg.name): \(error)")
+            print("ERROR: Could not fetch \(pkg.name!): \(error)")
             exit(1)
         }
     }
@@ -98,13 +108,13 @@ func update(_ package: Package, lock: LockFile?) -> [ExternalDependency] {
     for pkg in package.externals {
         print("Updating external dependency \(pkg.name)...")
         do {
-            try updateDependency(pkg, lock: lock?[pkg.gitURL])
+            try updateDependency(pkg, lock: lock?[pkg.url])
             do {
-                try FS.symlinkItem(from: Path(".."), to: Path("external/\(pkg.name)/external"))
+                try FS.symlinkItem(from: Path(".."), to: Path("external/\(pkg.name!)/external"))
             } catch SysError.FileExists {
                 // just ignore this error as the symlink may exist from previous calls
             }
-            let subPackagePath = Path("external/\(pkg.name)/build.atpkg")
+            let subPackagePath = Path("external/\(pkg.name!)/build.atpkg")
             do {
                 let p = try Package(filepath: subPackagePath, overlay: [], focusOnTask: nil)
                 packages.append(pkg)
@@ -113,19 +123,20 @@ func update(_ package: Package, lock: LockFile?) -> [ExternalDependency] {
                 print("Unable to load build file '\(subPackagePath)': \(error)")
             }
         } catch {
-            print("ERROR: Could not update \(pkg.name): \(error)")
+            print("ERROR: Could not update \(pkg.name!): \(error)")
             return packages
         }
     }
     return packages
 }
 
+/// - paramater pinned: true if being pinned, false if being unpinned
 func pinStatus(_ package: Package, lock: LockFile?, name: String, pinned: Bool) -> [ExternalDependency] {
     var packages = [ExternalDependency]()
     let lockFile: LockFile = lock ?? LockFile()
 
     for pkg in package.externals {
-        let subPackagePath = Path("external/\(pkg.name)/build.atpkg")
+        let subPackagePath = Path("external/\(pkg.name!)/build.atpkg")
         do {
             let p = try Package(filepath: subPackagePath, overlay: [], focusOnTask: nil)
             packages.append(pkg)
@@ -137,16 +148,19 @@ func pinStatus(_ package: Package, lock: LockFile?, name: String, pinned: Bool) 
     for pkg in packages {
         if pkg.name == name {
             guard let usedCommitID = getCurrentCommitID(pkg) else {
-                print("ERROR: Corrupt git repository for package \(pkg.name)")
+                print("ERROR: Corrupt git repository for package \(pkg.name!)")
                 exit(1)
             }
 
-            let lockedPackage = lockFile[pkg.gitURL]
+            var lockedPackage = lockFile[pkg.url]!
+
             if pinned {
-                lockFile[pkg.gitURL] = LockedPackage(url: pkg.gitURL, usedCommitID: usedCommitID, pinnedCommitID: usedCommitID, overrideURL: lockedPackage?.overrideURL)
+                lockedPackage.gitPayload.pinnedCommitID = usedCommitID
             } else {
-                lockFile[pkg.gitURL] = LockedPackage(url: pkg.gitURL, usedCommitID: usedCommitID, overrideURL: lockedPackage?.overrideURL)
+                lockedPackage.gitPayload.pinnedCommitID = nil
             }
+            lockFile[pkg.url] = lockedPackage
+
         }
     }
 
@@ -158,7 +172,7 @@ func overrideURL(_ package: Package, lock: LockFile?, name: String, newURL: Stri
     let lockFile: LockFile = lock ?? LockFile()
 
     for pkg in package.externals {
-        let subPackagePath = Path("external/\(pkg.name)/build.atpkg")
+        let subPackagePath = Path("external/\(pkg.name!)/build.atpkg")
         do {
             let p = try Package(filepath: subPackagePath, overlay: [], focusOnTask: nil)
             packages.append(pkg)
@@ -169,13 +183,9 @@ func overrideURL(_ package: Package, lock: LockFile?, name: String, newURL: Stri
     }
     for pkg in packages {
         if pkg.name == name {
-            guard let usedCommitID = getCurrentCommitID(pkg) else {
-                print("ERROR: Corrupt git repository for package \(pkg.name)")
-                exit(1)
-            }
-
-            let lockedPackage = lockFile[pkg.gitURL]
-            lockFile[pkg.gitURL] = LockedPackage(url: pkg.gitURL, usedCommitID: usedCommitID, pinnedCommitID: lockedPackage?.pinnedCommitID, overrideURL: newURL)
+            var lockedPackage = lockFile[pkg.url]!
+            lockedPackage.gitPayload.overrideURL = newURL
+            lockFile[pkg.url] = lockedPackage
         }
     }
 
@@ -189,22 +199,41 @@ func writeLockFile(_ packages: [ExternalDependency], lock: LockFile?) {
 
     let lockPkgs = lockFile.packages
     for pkg in packages {
-        guard let usedCommitID = getCurrentCommitID(pkg) else {
-            print("ERROR: Corrupt git repository for package \(pkg.name)")
-            exit(1)
-        }
 
-        var found = false
+        //look for an existing lockedPackage in our list
+
+        //swift can't infer the single assignment here
+        var lockedPackage : LockedPackage
+        var _lockedPackage : LockedPackage! = nil
         for lockedPkg in lockPkgs {
-            if lockedPkg.url == pkg.gitURL {
-                newPackages.append(LockedPackage(url: pkg.gitURL, usedCommitID: usedCommitID, pinnedCommitID:lockedPkg.pinnedCommitID, overrideURL:lockedPkg.overrideURL))
-                found = true
-                break
+            if lockedPkg.url == pkg.url {
+                _lockedPackage = lockedPkg
             }
         }
-        if !found {
-            newPackages.append(LockedPackage(url: pkg.gitURL, usedCommitID:usedCommitID))
+        if let lp = _lockedPackage {
+            lockedPackage = lp
         }
+        else {
+            switch(pkg.dependencyType) {
+                case .Git:
+                lockedPackage = LockedPackage(url: pkg.url, payloads:[LockedPayload(key: "git")])
+                case .Manifest:
+                lockedPackage = LockedPackage(url: pkg.url, payloads: [])
+            }
+        }
+
+        switch(pkg.dependencyType) {
+            case .Git:
+            updateGitLockPackage(pkg: pkg, lockedPackage: &lockedPackage)
+
+            case .Manifest:
+            break
+        }
+
+
+        //foo
+
+        newPackages.append(lockedPackage)
     }
     lockFile.packages = newPackages
     let string = lockFile.serialize()
@@ -337,4 +366,5 @@ default:
     help()
 }
 
+print("Unspecified error.")
 exit(1)

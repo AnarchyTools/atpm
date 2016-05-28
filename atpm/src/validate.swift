@@ -21,10 +21,10 @@ func ==(lhs:ExternalDependency.VersioningMethod, rhs: ExternalDependency.Version
 func validateVersions(packages: [ExternalDependency]) -> [String:[ExternalDependency.VersioningMethod]]? {
 	var grouped = [URL:[ExternalDependency]]()
 	for p in packages {
-		if grouped[p.gitURL] == nil {
-			grouped[p.gitURL] = [ExternalDependency]()
+		if grouped[p.url] == nil {
+			grouped[p.url] = [ExternalDependency]()
 		}
-		grouped[p.gitURL]!.append(p)
+		grouped[p.url]!.append(p)
 	}
 
 	var failed = Dictionary<String, Array<ExternalDependency.VersioningMethod>>()
@@ -56,21 +56,21 @@ func validateVersions(packages: [ExternalDependency]) -> [String:[ExternalDepend
 							try versionRange.combine(v)
 						} catch {
 							// so we cannot combine the ranges -> failed
-							if failed[pkg.name] == nil {
-								failed[pkg.name] = []
-								failed[pkg.name]!.append(vMethod)
+							if failed[pkg.name!] == nil {
+								failed[pkg.name!] = []
+								failed[pkg.name!]!.append(vMethod)
 							}
-							failed[pkg.name]!.append(pkg.version)
+							failed[pkg.name!]!.append(pkg.version)
 						}
 					}
 				}
 			} else {
 				// different versioning schemes don't match by definition
-				if failed[pkg.name] == nil {
-					failed[pkg.name] = []
-					failed[pkg.name]!.append(vMethod)
+				if failed[pkg.name!] == nil {
+					failed[pkg.name!] = []
+					failed[pkg.name!]!.append(vMethod)
 				}
-				failed[pkg.name]!.append(pkg.version)
+				failed[pkg.name!]!.append(pkg.version)
 			}
     	}
 	}
