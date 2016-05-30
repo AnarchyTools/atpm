@@ -25,6 +25,24 @@ public struct LockedPackage {
     public let url: URL
     var payloads: [LockedPayload]
 
+    ///Gets a payload matching the key
+    public func payloadMatching(key: String) -> LockedPayload? {
+        if let payload = self.payloads.filter({$0.key == key}).first {
+            return payload
+        }    
+        return nil
+    }
+
+    ///Gets or creates a payload matching the key
+    public mutating func createPayloadMatching(key: String) -> LockedPayload {
+        if let payload = self.payloadMatching(key: key) {
+            return payload
+        }
+        let newPayload = LockedPayload(key: key)
+        self.payloads.append(newPayload)
+        return newPayload
+    }
+
     public var gitPayload : LockedPayload {
         get {
             precondition(payloads.count == 1)

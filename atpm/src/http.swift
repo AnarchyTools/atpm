@@ -16,7 +16,14 @@ import atpkg
 import atpm_tools
 
 ///We populate the _applicationInfo with this value
+///Basically, although via the git architecture it's pretty easy to find out what git we checked out (just inspect the commit)
+///Doing that for binaries is too complicated.  We don't remember where the tarball is, we don't remember what its shasum was, etc.
+///So instead, we build one of these during the binary fetch process and then use it when we write the lockfile
 struct HTTPDependencyInfo {
+    let channels: [HTTPDependencyChannel]
+}
+
+struct HTTPDependencyChannel {
     let lockedPayload: LockedPayload
     let channel: String
 }
@@ -48,6 +55,7 @@ func fetchHTTPDependency(_ pkg:ExternalDependency,lock: LockedPackage?) throws {
         //load all available channel
         channelsToLoad = channels.map({$0.name}) 
     }
+    var httpChannels : [HTTPDependencyChannel] = []
     for channel in channelsToLoad {
         //load channel
         guard let parsedChannel = channels.filter({$0.name == channel}).first else {
@@ -80,7 +88,6 @@ func fetchHTTPDependency(_ pkg:ExternalDependency,lock: LockedPackage?) throws {
         if FS.fileExists(path: tarballPath) { try FS.removeItem(path: tarballPath)}
         if !FS.fileExists(path: packagePath) { try FS.createDirectory(path: packagePath) }
         try fetch(url: binaryVersion.url, to: tarballPath)
-        print(tarballPath.description)
         if tarballPath.description.hasSuffix("tar.xz") {
             print("Expanding tarball...")
             let result = system("tar xf \(tarballPath) -C \(packagePath)")
@@ -88,7 +95,21 @@ func fetchHTTPDependency(_ pkg:ExternalDependency,lock: LockedPackage?) throws {
                 throw PMError.TarError(exitCode: result)
             }
         }
+
+        //load the payload out of the lock file if it already exists
+        var lockedPayload: LockedPayload
+        if let lp = lock?.payloadMatching(key: channel) { lockedPayload = lp}
+        else {lockedPayload = LockedPayload(key: channel)}
+
+        lockedPayload.usedVersion = versionToLoad.description
+        lockedPayload.usedURL = binaryVersion.url.description
+        lockedPayload.shaSum = getSHASum(path: tarballPath)
+
+        //copy payload to applicationInfo
+        let httpInfo = HTTPDependencyChannel(lockedPayload: lockedPayload, channel: channel)
+        httpChannels.append(httpInfo)
     }
+    pkg._applicationInfo = HTTPDependencyInfo(channels: httpChannels)
 }
 
 private func getSHASum(path: Path) -> String {
@@ -105,7 +126,8 @@ private func getSHASum(path: Path) -> String {
             break
         }
         if let shasum = String(validatingUTF8: buffer) {
-            return shasum
+            //chop off \n
+            return String(shasum.characters[shasum.characters.startIndex..<shasum.characters.index(before: shasum.characters.endIndex)])
         }
     }
     fatalError("Could not calculate shasum for \(path)")

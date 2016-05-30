@@ -13,10 +13,24 @@ pwd
 echo "*** Binary dependencies ***"
 pushd "$DIR/binary"
 $ATPM fetch
-popd
 
-echo "pwd"
-pwd
+echo "validating keys"
+if ! grep "1.0" build.atlock; then
+    echo "Failed to find locked version 1.0"
+    exit 1
+fi
+
+if ! grep "https://github.com/AnarchyTools/dummyBinaryPackage/releases/download/0.1/osx.tar.xz" build.atlock; then
+    echo "Failed to find expected URL"
+    exit 1
+fi
+
+if ! grep "c8311dd51dfbdd6f76c312f660f208a163415e5e7fa9f8c87f82ecaf50e0378b" build.atlock; then
+    echo "Failed to find expected shasum"
+    exit 1
+fi
+
+popd
 
 #
 # Simple dependency fetcher

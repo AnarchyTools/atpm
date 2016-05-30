@@ -227,6 +227,15 @@ func writeLockFile(_ packages: [ExternalDependency], lock: LockFile?) {
             updateGitLockPackage(pkg: pkg, lockedPackage: &lockedPackage)
 
             case .Manifest:
+            //Pull the payloads out of the pkg._applicationInfo
+            //This is set when the dependency was fetched
+            guard let info = pkg._applicationInfo as? HTTPDependencyInfo else {
+                fatalError("No _applicationInfo for manifest")
+            }
+            for payload in info.channels {
+                lockedPackage.payloads.append(payload.lockedPayload)
+            }
+
             break
         }
 
