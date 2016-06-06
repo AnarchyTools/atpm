@@ -85,9 +85,14 @@ func fetchHTTPDependency(_ pkg:ExternalDependency,lock: LockedPackage?, forceUpd
             let atpmVersion = Version(string: manifestVersion.version)
             versions.append(atpmVersion)
         }
+
+        //load the payload out of the lock file if it already exists
+        var lockedPayload: LockedPayload
+        if let lp = lock?.payloadMatching(key: channel) { lockedPayload = lp}
+        else {lockedPayload = LockedPayload(key: channel)}
         
         //figure out which version we need to load
-        guard let versionToLoad = try chooseVersion(versions: versions, versionRange: versionRange) else {
+        guard let versionToLoad = try chooseVersion(versions: versions, versionRange: versionRange, lockedPayload: lockedPayload) else {
             fatalError("Can't find a version matching \(versionRange) in \(versions)")
         }
         
@@ -108,10 +113,7 @@ func fetchHTTPDependency(_ pkg:ExternalDependency,lock: LockedPackage?, forceUpd
             }
         }
 
-        //load the payload out of the lock file if it already exists
-        var lockedPayload: LockedPayload
-        if let lp = lock?.payloadMatching(key: channel) { lockedPayload = lp}
-        else {lockedPayload = LockedPayload(key: channel)}
+
 
         lockedPayload.usedVersion = versionToLoad.description
         lockedPayload.usedURL = binaryVersion.url.description

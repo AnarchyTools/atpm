@@ -93,11 +93,11 @@ public struct LockedPackage {
         var result = [String]()
         result.append("{")
         result.append("  :\(Option.URL.rawValue) \"\(self.url)\"")
-        result.append("  :\(Option.Payloads.rawValue) {")
+        result.append("  :\(Option.Payloads.rawValue) [")
         for payload in payloads {
             result.append(contentsOf: payload.serialize())
         }
-        result.append("  }")
+        result.append("  ]")
         result.append("}")
         return result
     }
@@ -169,11 +169,10 @@ public struct LockedPayload {
         self.key = key
 
 
-        guard let usedCommitID = kvp[Option.UsedCommit.rawValue]?.string else {
-            fatalError("No commit ID for locked package; did you forget to specify it?")
+        if let usedCommitID = kvp[Option.UsedCommit.rawValue]?.string {
+            self.usedCommitID = usedCommitID
         }
 
-        self.usedCommitID = usedCommitID
 
         if let pinnedCommitID = kvp[Option.PinCommit.rawValue]?.string {
             self.usedCommitID = pinnedCommitID

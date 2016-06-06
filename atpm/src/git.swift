@@ -95,7 +95,7 @@ func updateGitDependency(_ pkg: ExternalDependency, lock: LockedPackage?, firstT
         }
         let versions = fetchVersions(pkg)
 
-        guard let version = try chooseVersion(versions: versions, versionRange: versionRange) else {
+        guard let version = try chooseVersion(versions: versions, versionRange: versionRange, lockedPayload:lock?.payloadMatching(key: "git")) else {
             throw PMError.InvalidVersion
         }
         let pullResult = logAndExecute(command: "cd 'external/\(pkg.name!)' && git checkout '\(version)'")

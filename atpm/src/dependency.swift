@@ -15,7 +15,19 @@ import atpkg
 import atfoundation
 import atpm_tools
 
-func chooseVersion(versions: [Version], versionRange: VersionRange) throws -> Version? {
+///Choose a version
+///- parameter versions: The set of legal versions we could choose
+///- parameter versionRange: Version specifiers such as are provided in a build.atpkg
+///- parameter lockedPayload: Use this payload to choose a version if possible
+func chooseVersion(versions: [Version], versionRange: VersionRange, lockedPayload: LockedPayload?) throws -> Version? {
+    if let v = lockedPayload?.usedVersion {
+        guard let lockedVersion = try versions.filter({ version throws -> Bool in
+            return version.description == v
+        }).first else {
+            fatalError("Can't find version \(v) to fetch.  Use update to resolve.")
+        }
+        return lockedVersion
+    }
     var versions = versions
     versions = try versions.filter { version throws -> Bool in
         return versionRange.versionInRange(version)

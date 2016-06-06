@@ -11,7 +11,12 @@ pwd
 # Binary dependencies test
 #
 echo "*** Binary dependencies ***"
+
 pushd "$DIR/binary"
+
+# remove existing tarball, etc
+rm -rf external
+
 $ATPM fetch
 
 echo "validating keys"

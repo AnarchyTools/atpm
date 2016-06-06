@@ -18,7 +18,7 @@
   :external-packages [
     {
       :url "https://raw.githubusercontent.com/AnarchyTools/dummyBinaryPackage/master/manifest.atpkg"
-      :version ["==0.1"]
+      :version [">=0.1"]
       :channels ["osx"]
     }
   ]

@@ -232,6 +232,8 @@ func writeLockFile(_ packages: [ExternalDependency], lock: LockFile?) {
             guard let info = pkg._applicationInfo as? HTTPDependencyInfo else {
                 fatalError("No _applicationInfo for manifest")
             }
+            //Overwrite all existing payloads
+            lockedPackage.payloads = []
             for payload in info.channels {
                 lockedPackage.payloads.append(payload.lockedPayload)
             }
