@@ -39,11 +39,11 @@ private func fetch(url: URL, to file: Path) throws {
 
 func fetchHTTPDependency(_ pkg:ExternalDependency,lock: LockedPackage?, forceUpdate: Bool = false) throws {
     print("Processing HTTP dependency...")
-    let packagePath = Path("external/manifest.atpkg")
-    if !FS.fileExists(path: packagePath) { try FS.createDirectory(path: packagePath) }
 
-
-    let manifestPath = packagePath.appending("manifest.atpkg")
+    //calculate a safe path to store the manifest
+    let manifestName = pkg.url.description.replacing(searchTerm: "/", replacement: "-").replacing(searchTerm: ":", replacement: "-")
+    let manifestPath = Path("external/\(manifestName)")
+    print("saving to \(manifestPath)")
 
     if FS.fileExists(path: manifestPath) && !forceUpdate {
         print("Manifest already exists; won't update")
@@ -54,6 +54,9 @@ func fetchHTTPDependency(_ pkg:ExternalDependency,lock: LockedPackage?, forceUpd
 
     let parsedManifest = try Package(filepath: manifestPath, overlay: [], focusOnTask: nil)
     pkg._parsedNameFromManifest = parsedManifest.name
+    let packagePath = Path("external/\(parsedManifest.name)")
+    if !FS.fileExists(path: packagePath) { try FS.createDirectory(path: packagePath) }
+
     guard let channels = parsedManifest.binaryChannels else { fatalError("No binary channels in manifest ")}
     //what channels should we load?
     let channelsToLoad: [String]
