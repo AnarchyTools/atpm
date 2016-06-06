@@ -37,11 +37,21 @@ private func fetch(url: URL, to file: Path) throws {
     }
 }
 
-func fetchHTTPDependency(_ pkg:ExternalDependency,lock: LockedPackage?) throws {
-    print("Fetching HTTP dependency...")
-    let manifestPath = try FS.temporaryDirectory().appending("manifest.atpkg")
+func fetchHTTPDependency(_ pkg:ExternalDependency,lock: LockedPackage?, forceUpdate: Bool = false) throws {
+    print("Processing HTTP dependency...")
+    let packagePath = Path("external/manifest.atpkg")
+    if !FS.fileExists(path: packagePath) { try FS.createDirectory(path: packagePath) }
 
-    try fetch(url: pkg.url, to: manifestPath)
+
+    let manifestPath = packagePath.appending("manifest.atpkg")
+
+    if FS.fileExists(path: manifestPath) && !forceUpdate {
+        print("Manifest already exists; won't update")
+    }
+    else {
+        try fetch(url: pkg.url, to: manifestPath)
+    }
+
     let parsedManifest = try Package(filepath: manifestPath, overlay: [], focusOnTask: nil)
     pkg._parsedNameFromManifest = parsedManifest.name
     guard let channels = parsedManifest.binaryChannels else { fatalError("No binary channels in manifest ")}
@@ -83,11 +93,13 @@ func fetchHTTPDependency(_ pkg:ExternalDependency,lock: LockedPackage?) throws {
         
         let binaryVersion = parsedChannel.versions.filter({$0.version == versionToLoad.description}).first!
         print("Fetching \(binaryVersion.url)")
-        let packagePath = Path("external/\(parsedManifest.name)")
         let tarballPath = packagePath.appending("\(binaryVersion.url.path.basename())")
-        if FS.fileExists(path: tarballPath) { try FS.removeItem(path: tarballPath)}
-        if !FS.fileExists(path: packagePath) { try FS.createDirectory(path: packagePath) }
-        try fetch(url: binaryVersion.url, to: tarballPath)
+        if FS.fileExists(path: tarballPath) && !forceUpdate {
+            print("Tarball already exists; won't download again.")
+        }
+        else {
+            try fetch(url: binaryVersion.url, to: tarballPath)
+        }
         if tarballPath.description.hasSuffix("tar.xz") {
             print("Expanding tarball...")
             let result = system("tar xf \(tarballPath) -C \(packagePath)")

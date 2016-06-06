@@ -15,8 +15,8 @@ pushd "$DIR/binary"
 $ATPM fetch
 
 echo "validating keys"
-if ! grep "1.0" build.atlock; then
-    echo "Failed to find locked version 1.0"
+if ! grep "0.1" build.atlock; then
+    echo "Failed to find locked version 0.1"
     exit 1
 fi
 

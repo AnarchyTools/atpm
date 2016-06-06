@@ -73,14 +73,14 @@ func fetch(_ package: Package, lock: LockFile?) -> [ExternalDependency] {
         print("Fetching external dependency \(pkg.name ?? "\(pkg.url)")...")
         do {
             try fetchDependency(pkg, lock: lock?[pkg.url])
-
-            do {
-                try FS.symlinkItem(from: Path(".."), to: Path("external/\(pkg.name!)/external"))
-            }
-        catch SysError.FileExists { /* */ }
-            let subPackagePath = Path("external/\(pkg.name!)/build.atpkg")
             switch(pkg.dependencyType) {
                 case .Git:
+                do {
+                    try FS.symlinkItem(from: Path(".."), to: Path("external/\(pkg.name!)/external"))
+                }
+                catch SysError.FileExists { /* */ }
+                let subPackagePath = Path("external/\(pkg.name!)/build.atpkg")
+
                 do {
                     let p = try Package(filepath: subPackagePath, overlay: [], focusOnTask: nil)
                     packages.append(pkg)
