@@ -51,18 +51,24 @@ func info(_ package: Package, indent: Int = 4) -> Bool {
         out += "- \(dep.url)"
         print(out)
 
-        let subPackagePath = Path("external/\(dep.name)/build.atpkg")
-        do {
-            let subPackage = try Package(filepath: subPackagePath, overlay: [], focusOnTask: nil)
-            info(subPackage, indent: indent + 4)
-        } catch {
-            out = ""
-            for _ in 0..<indent {
-                out += " "
+        switch(dep.dependencyType) {
+            case .Git:
+            let subPackagePath = Path("external/\(dep.name)/build.atpkg")
+            do {
+                let subPackage = try Package(filepath: subPackagePath, overlay: [], focusOnTask: nil)
+                info(subPackage, indent: indent + 4)
+            } catch {
+                out = ""
+                for _ in 0..<indent {
+                    out += " "
+                }
+                out += "-> Could not load Package file: \(error)"
+                print(out)
             }
-            out += "-> Could not load Package file: \(error)"
-            print(out)
+            case .Manifest:
+            break
         }
+        
     }
     return true
 }

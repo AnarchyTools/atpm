@@ -65,6 +65,10 @@ if ! grep "0.2" build.atlock; then
     exit 1
 fi
 
+## try remaining verbs
+
+$ATPM info
+
 popd
 
 #
