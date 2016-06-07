@@ -5,7 +5,7 @@ linux:
     stage: build
     script:
         - apt-get update
-        - apt-get install --no-install-recommends xz-utils curl git ca-certificates -y
+        - apt-get install --no-install-recommends xz-utils curl git ca-certificates curl -y
         - curl -s https://packagecloud.io/install/repositories/anarchytools/AT/script.deb.sh | bash
         - apt-get install atbuild package-deb -y
         - git submodule update --recursive --init
