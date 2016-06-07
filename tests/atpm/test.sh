@@ -16,6 +16,8 @@ pushd "$DIR/binary"
 
 # remove existing tarball, etc
 rm -rf external
+# checkout locked atlock
+git checkout build.atlock
 
 $ATPM fetch
 
@@ -56,6 +58,12 @@ if ! grep ':pin false' build.atlock; then
     exit 1
 fi
 
+$ATPM update
+
+if ! grep "0.2" build.atlock; then
+    echo "Failed to find the locked version 0.2"
+    exit 1
+fi
 
 popd
 
