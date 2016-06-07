@@ -88,7 +88,7 @@
       :tool "package-deb.attool"
       :name "atpm"
       :dependencies ["atbin"]
-      :recommends "git coreutils curl ca-certificates"
+      :recommends "git, coreutils, curl, ca-certificates"
     }
 
 
