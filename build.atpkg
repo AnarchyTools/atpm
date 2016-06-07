@@ -105,9 +105,15 @@
       :dependencies ["package-linux" "package-osx"]
     }
 
+    :toolcheck {
+      :tool "shell"
+      :dependencies ["atpm"]
+      :script "bash tests/atpm/test.sh"
+    }
+
     :check {
       :tool "nop"
-      :dependencies ["run-tests"]
+      :dependencies ["run-tests" "toolcheck"]
     }
 
     :build-tests {
