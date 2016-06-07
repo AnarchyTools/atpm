@@ -139,7 +139,12 @@ func fetchHTTPDependency(_ pkg:ExternalDependency,lock: LockedPackage?, update: 
 }
 
 private func getSHASum(path: Path) -> String {
-    let fp = popen("shasum -a 256 -b \(path) | cut -d ' ' -f 1 ", "r")
+    #if os(OSX)
+    let cmd = "shasum -a 256 -b \(path) | cut -d ' ' -f 1 "
+    #elseif os(Linux)
+    let cmd = "sha256sum -b \(path) | cut -d ' ' -f 1 "
+    #endif
+    let fp = popen(cmd, "r")
     guard fp != nil else {
         fatalError("fp is nil")
     }
