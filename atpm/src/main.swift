@@ -109,19 +109,27 @@ func update(_ package: Package, lock: LockFile?) -> [ExternalDependency] {
         print("Updating external dependency \(pkg.name)...")
         do {
             try updateDependency(pkg, lock: lock?[pkg.url])
-            do {
-                try FS.symlinkItem(from: Path(".."), to: Path("external/\(pkg.name!)/external"))
-            } catch SysError.FileExists {
-                // just ignore this error as the symlink may exist from previous calls
-            }
-            let subPackagePath = Path("external/\(pkg.name!)/build.atpkg")
-            do {
-                let p = try Package(filepath: subPackagePath, overlay: [], focusOnTask: nil)
+
+            switch(pkg.dependencyType) {
+                case .Git:
+                do {
+                    try FS.symlinkItem(from: Path(".."), to: Path("external/\(pkg.name!)/external"))
+                } catch SysError.FileExists {
+                    // just ignore this error as the symlink may exist from previous calls
+                }
+                let subPackagePath = Path("external/\(pkg.name!)/build.atpkg")
+                do {
+                    let p = try Package(filepath: subPackagePath, overlay: [], focusOnTask: nil)
+                    packages.append(pkg)
+                    packages += update(p, lock: lock)
+                } catch {
+                    print("Unable to load build file '\(subPackagePath)': \(error)")
+                }
+
+                case .Manifest:
                 packages.append(pkg)
-                packages += update(p, lock: lock)
-            } catch {
-                print("Unable to load build file '\(subPackagePath)': \(error)")
             }
+            
         } catch {
             print("ERROR: Could not update \(pkg.name!): \(error)")
             return packages
@@ -136,31 +144,59 @@ func pinStatus(_ package: Package, lock: LockFile?, name: String, pinned: Bool) 
     let lockFile: LockFile = lock ?? LockFile()
 
     for pkg in package.externals {
-        let subPackagePath = Path("external/\(pkg.name!)/build.atpkg")
-        do {
-            let p = try Package(filepath: subPackagePath, overlay: [], focusOnTask: nil)
+        switch(pkg.dependencyType) {
+            case .Git:
+            let subPackagePath = Path("external/\(pkg.name!)/build.atpkg")
+            do {
+                let p = try Package(filepath: subPackagePath, overlay: [], focusOnTask: nil)
+                packages.append(pkg)
+                packages += pinStatus(p, lock: lock, name: name, pinned: pinned)
+            } catch {
+                print("Unable to load build file '\(subPackagePath)': \(error)")
+            }
+
+            case .Manifest:
             packages.append(pkg)
-            packages += pinStatus(p, lock: lock, name: name, pinned: pinned)
-        } catch {
-            print("Unable to load build file '\(subPackagePath)': \(error)")
-        }
+        }   
     }
+
+    //vend an inner func to do the match check
+    func packageMatches(lockFile: LockFile, package: ExternalDependency, name: String) -> (LockedPayload, LockedPackage)? {
+        var lockedPackage = lockFile[package.url]!
+        switch(package.dependencyType) {
+            case .Git:
+            if package.name == name { return (lockedPackage.gitPayload, lockedPackage) }
+
+            case .Manifest:
+            if !name.contains(character: ".") {
+                fatalError("Use package.channel syntax when pinning a binary package, not \(name)")
+            }
+            let actualPackageName = name.split(character: ".")[0]
+            let actualChannelName = name.split(character: ".")[1]
+            if package.name! == actualPackageName {
+                defer {lockFile[package.url] = lockedPackage}
+                let payload = lockedPackage.createPayloadMatching(key: actualChannelName)
+                return (payload, lockedPackage)
+            }
+        }
+        return nil
+    }
+
     for pkg in packages {
-        if pkg.name == name {
-            guard let usedCommitID = getCurrentCommitID(pkg) else {
-                print("ERROR: Corrupt git repository for package \(pkg.name!)")
-                exit(1)
-            }
-
-            var lockedPackage = lockFile[pkg.url]!
-
+        //manifest packages need to be fetched so as to resolve their names
+        if pkg.dependencyType == .Manifest {
+            try! fetchHTTPManifestOnly(pkg)
+        }
+        if var (payload, package) = packageMatches(lockFile: lockFile, package: pkg, name: name) {
             if pinned {
-                lockedPackage.gitPayload.pinnedCommitID = usedCommitID
+                payload.pinned = true
+                print("pinning \(payload)")
             } else {
-                lockedPackage.gitPayload.pinnedCommitID = nil
+                payload.pinned = false
             }
-            lockFile[pkg.url] = lockedPackage
-
+            //update containing structs
+            package.setPayload(payload)
+            lockFile[pkg.url] = package
         }
     }
 
@@ -229,14 +265,15 @@ func writeLockFile(_ packages: [ExternalDependency], lock: LockFile?) {
             case .Manifest:
             //Pull the payloads out of the pkg._applicationInfo
             //This is set when the dependency was fetched
-            guard let info = pkg._applicationInfo as? HTTPDependencyInfo else {
-                fatalError("No _applicationInfo for manifest")
+            if let info = pkg._applicationInfo as? HTTPDependencyInfo {
+                //Overwrite all existing payloads
+                lockedPackage.payloads = []
+                for payload in info.channels {
+                    lockedPackage.payloads.append(payload.lockedPayload)
+                    print("appending \(payload)")
+                }
             }
-            //Overwrite all existing payloads
-            lockedPackage.payloads = []
-            for payload in info.channels {
-                lockedPackage.payloads.append(payload.lockedPayload)
-            }
+
 
             break
         }

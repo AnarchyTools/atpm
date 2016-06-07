@@ -37,16 +37,17 @@ private func fetch(url: URL, to file: Path) throws {
     }
 }
 
-func fetchHTTPDependency(_ pkg:ExternalDependency,lock: LockedPackage?, forceUpdate: Bool = false) throws {
-    print("Processing HTTP dependency...")
+func calculateManifestPath(_ pkg: ExternalDependency) throws {
 
+}
+
+func fetchHTTPManifestOnly(_ pkg: ExternalDependency, update: Bool = false) throws -> Package {
     //calculate a safe path to store the manifest
     let manifestName = pkg.url.description.replacing(searchTerm: "/", replacement: "-").replacing(searchTerm: ":", replacement: "-")
     let manifestPath = Path("external/\(manifestName)")
-    print("saving to \(manifestPath)")
 
-    if FS.fileExists(path: manifestPath) && !forceUpdate {
-        print("Manifest already exists; won't update")
+    if FS.fileExists(path: manifestPath) && !update {
+        print("Manifest already exists; uses update to update")
     }
     else {
         try fetch(url: pkg.url, to: manifestPath)
@@ -54,6 +55,14 @@ func fetchHTTPDependency(_ pkg:ExternalDependency,lock: LockedPackage?, forceUpd
 
     let parsedManifest = try Package(filepath: manifestPath, overlay: [], focusOnTask: nil)
     pkg._parsedNameFromManifest = parsedManifest.name
+    return parsedManifest
+}
+
+func fetchHTTPDependency(_ pkg:ExternalDependency,lock: LockedPackage?, update: Bool = false) throws {
+    print("Processing HTTP dependency...")
+
+    let parsedManifest = try fetchHTTPManifestOnly(pkg, update: update)
+    
     let packagePath = Path("external/\(parsedManifest.name)")
     if !FS.fileExists(path: packagePath) { try FS.createDirectory(path: packagePath) }
 
@@ -95,15 +104,15 @@ func fetchHTTPDependency(_ pkg:ExternalDependency,lock: LockedPackage?, forceUpd
         else {lockedPayload = LockedPayload(key: channel)}
         
         //figure out which version we need to load
-        guard let versionToLoad = try chooseVersion(versions: versions, versionRange: versionRange, lockedPayload: lockedPayload) else {
+        guard let versionToLoad = try chooseVersion(versions: versions, versionRange: versionRange, lockedPayload: lockedPayload, update: update) else {
             fatalError("Can't find a version matching \(versionRange) in \(versions)")
         }
         
         let binaryVersion = parsedChannel.versions.filter({$0.version == versionToLoad.description}).first!
         print("Fetching \(binaryVersion.url)")
         let tarballPath = packagePath.appending("\(binaryVersion.url.path.basename())")
-        if FS.fileExists(path: tarballPath) && !forceUpdate {
-            print("Tarball already exists; won't download again.")
+        if FS.fileExists(path: tarballPath) && !update {
+            print("Tarball already exists; use update to update")
         }
         else {
             try fetch(url: binaryVersion.url, to: tarballPath)

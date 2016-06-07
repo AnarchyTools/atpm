@@ -19,14 +19,17 @@ import atpm_tools
 ///- parameter versions: The set of legal versions we could choose
 ///- parameter versionRange: Version specifiers such as are provided in a build.atpkg
 ///- parameter lockedPayload: Use this payload to choose a version if possible
-func chooseVersion(versions: [Version], versionRange: VersionRange, lockedPayload: LockedPayload?) throws -> Version? {
-    if let v = lockedPayload?.usedVersion {
-        guard let lockedVersion = try versions.filter({ version throws -> Bool in
-            return version.description == v
-        }).first else {
-            fatalError("Can't find version \(v) to fetch.  Use update to resolve.")
+///- parameter update: Whether to update the package, or only fetch
+func chooseVersion(versions: [Version], versionRange: VersionRange, lockedPayload: LockedPayload?, update: Bool) throws -> Version? {
+    if lockedPayload?.pinned == true || !update {
+        if let v = lockedPayload?.usedVersion {
+            guard let lockedVersion = try versions.filter({ version throws -> Bool in
+                return version.description == v
+            }).first else {
+                fatalError("Can't find version \(v) to fetch.  Use update and/or unpin to resolve.")
+            }
+            return lockedVersion
         }
-        return lockedVersion
     }
     var versions = versions
     versions = try versions.filter { version throws -> Bool in
@@ -51,7 +54,7 @@ func updateDependency(_ pkg: ExternalDependency, lock: LockedPackage?, firstTime
         case .Git:
         try updateGitDependency(pkg, lock: lock, firstTime: firstTime)
         case .Manifest:
-        print("todo")
+        try fetchHTTPDependency(pkg, lock: lock, update: true)
         break
     }
 }
@@ -78,7 +81,7 @@ func fetchDependency(_ pkg: ExternalDependency, lock: LockedPackage?) throws {
         try fetchGitDependency(pkg, lock: lock)
 
         case .Manifest:
-        try fetchHTTPDependency(pkg, lock: lock)
+        try fetchHTTPDependency(pkg, lock: lock, update: false)
     }
 
 

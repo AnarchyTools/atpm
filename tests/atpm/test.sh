@@ -35,6 +35,28 @@ if ! grep "c8311dd51dfbdd6f76c312f660f208a163415e5e7fa9f8c87f82ecaf50e0378b" bui
     exit 1
 fi
 
+$ATPM pin DummyBinary.osx
+
+if ! grep ':pin true' build.atlock; then
+    echo "Failed to pin"
+    exit 1
+fi
+
+$ATPM update
+
+if ! grep "0.1" build.atlock; then
+    echo "Failed to find locked version 0.1"
+    exit 1
+fi
+
+$ATPM unpin DummyBinary.osx
+
+if ! grep ':pin false' build.atlock; then
+    echo "Failed to pin"
+    exit 1
+fi
+
+
 popd
 
 #

@@ -33,6 +33,15 @@ public struct LockedPackage {
         return nil
     }
 
+    public mutating func setPayload(_ payload: LockedPayload) {
+        for (x,p) in payloads.enumerated() {
+            if p.key == payload.key {
+                payloads.remove(at: x)
+            }
+        }
+        self.payloads.append(payload)
+    }
+
     ///Gets or creates a payload matching the key
     public mutating func createPayloadMatching(key: String) -> LockedPayload {
         if let payload = self.payloadMatching(key: key) {
@@ -121,7 +130,7 @@ extension LockedPackage: Hashable {
 public struct LockedPayload {
     public let key: String
     internal(set) public var usedCommitID: String?  = nil
-    internal(set) public var pinnedCommitID: String? = nil
+    internal(set) public var pinned: Bool? = false
     internal(set) public var overrideURL:String?     = nil
 
     ///For manifest-based packages, the URL we chose inside the manifest
@@ -134,7 +143,7 @@ public struct LockedPayload {
     public enum Option: String {
         case Key = "key"
         case UsedCommit = "used-commit"
-        case PinCommit = "pin-commit"
+        case Pin = "pin"
         case OverrideURL = "override-url"
         case UsedURL = "used-url"
         case UsedVersion = "used-version"
@@ -145,7 +154,7 @@ public struct LockedPayload {
             return [
                     Key,
                     UsedCommit,
-                    PinCommit,
+                    Pin,
                     OverrideURL,
                     UsedURL,
                     UsedVersion,
@@ -174,9 +183,8 @@ public struct LockedPayload {
         }
 
 
-        if let pinnedCommitID = kvp[Option.PinCommit.rawValue]?.string {
-            self.usedCommitID = pinnedCommitID
-            self.pinnedCommitID = pinnedCommitID
+        if let pinned = kvp[Option.Pin.rawValue]?.bool {
+            self.pinned = pinned
         }
 
         if let overrideURL = kvp[Option.OverrideURL.rawValue]?.string {
@@ -207,8 +215,8 @@ public struct LockedPayload {
             result.append("  :\(Option.UsedCommit.rawValue) \"\(usedCommitID)\"")
         }
 
-        if let pinnedCommitID = self.pinnedCommitID {
-            result.append("  :\(Option.PinCommit.rawValue) \"\(pinnedCommitID)\"")
+        if let pinned = self.pinned {
+            result.append("  :\(Option.Pin.rawValue) \(pinned)")
         }
 
         if let overrideURL = self.overrideURL {
@@ -322,7 +330,7 @@ final public class LockFile {
     public func serialize() -> String {
         var result = ";; Anarchy Tools Package Manager lock file\n;;\n"
 
-        result += ";; If you want to pin a package to a git commit add a ':pin-commit'\n"
+        result += ";; If you want to pin a package to a git commit add a ':pin'\n"
         result += ";; line to that package definition. This will override all version\n"
         result += ";; information the build files specify.\n;;\n"
 

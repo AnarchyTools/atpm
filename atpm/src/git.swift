@@ -52,9 +52,9 @@ func updateGitDependency(_ pkg: ExternalDependency, lock: LockedPackage?, firstT
     }
 
     // If we are pinned only checkout that commit
-    if let lock = lock where lock.gitPayload.pinnedCommitID != nil {
-        print("Package \(pkg.name!) is pinned to \(lock.gitPayload.pinnedCommitID!)")
-        let pullResult = logAndExecute(command: "cd 'external/\(pkg.name!)' && git checkout '\(lock.gitPayload.pinnedCommitID!)'")
+    if let lock = lock where lock.gitPayload.pinned != nil {
+        print("Package \(pkg.name!) is pinned to \(lock.gitPayload.usedCommitID!)")
+        let pullResult = logAndExecute(command: "cd 'external/\(pkg.name!)' && git checkout '\(lock.gitPayload.usedCommitID!)'")
         if pullResult != 0 {
             throw PMError.GitError(exitCode: pullResult)
         }
@@ -95,7 +95,7 @@ func updateGitDependency(_ pkg: ExternalDependency, lock: LockedPackage?, firstT
         }
         let versions = fetchVersions(pkg)
 
-        guard let version = try chooseVersion(versions: versions, versionRange: versionRange, lockedPayload:lock?.payloadMatching(key: "git")) else {
+        guard let version = try chooseVersion(versions: versions, versionRange: versionRange, lockedPayload:lock?.payloadMatching(key: "git"), update: false) else {
             throw PMError.InvalidVersion
         }
         let pullResult = logAndExecute(command: "cd 'external/\(pkg.name!)' && git checkout '\(version)'")
