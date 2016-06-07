@@ -22,7 +22,7 @@ func fetchVersions(_ pkg: ExternalDependency) -> [Version] {
         return []
     }
     defer {
-        fclose(fp)
+        pclose(fp)
     }
 
     var versions = [Version]()
