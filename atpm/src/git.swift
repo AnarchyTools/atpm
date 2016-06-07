@@ -138,7 +138,6 @@ func updateGitLockPackage(pkg: ExternalDependency, lockedPackage: inout LockedPa
 }
 func getCurrentCommitID(_ pkg: ExternalDependency) -> String? {
     if !FS.fileExists(path: Path("external/\(pkg.name!)")) {
-        print("here")
         return nil
     }
     let fp = popen("cd 'external/\(pkg.name!)' && git rev-parse HEAD", "r")
@@ -154,7 +153,6 @@ func getCurrentCommitID(_ pkg: ExternalDependency) -> String? {
             break
         }
         if let commitID = String(validatingUTF8: buffer) {
-            print("returning \(commitID)")
             return commitID.subString(toIndex: commitID.index(commitID.startIndex, offsetBy: commitID.characters.count - 1))
         }
     }
