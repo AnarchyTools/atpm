@@ -21,75 +21,99 @@ enum LockFileError: ErrorProtocol {
     case NonLockFile
 }
 
-final public class LockedPackage {
+public struct LockedPackage {
     public let url: URL
-    private(set) public var usedCommitID: String
-    private(set) public var pinnedCommitID: String? = nil
-    private(set) public var overrideURL:String?     = nil
+    var payloads: [LockedPayload]
 
-    public enum Option: String {
-        case URL = "url"
-        case UsedCommit = "used-commit"
-        case PinCommit = "pin-commit"
-        case OverrideURL = "override-url"
-
-        public static var allOptions: [Option] {
-            return [
-                    URL,
-                    UsedCommit,
-                    PinCommit,
-                    OverrideURL
-            ]
-        }
+    ///Gets a payload matching the key
+    public func payloadMatching(key: String) -> LockedPayload? {
+        if let payload = self.payloads.filter({$0.key == key}).first {
+            return payload
+        }    
+        return nil
     }
 
-    init(url: URL, usedCommitID: String, pinnedCommitID: String? = nil, overrideURL: String? = nil) {
-        self.url = url
-        self.usedCommitID = usedCommitID
-        self.pinnedCommitID = pinnedCommitID
-        self.overrideURL = overrideURL
+    public mutating func setPayload(_ payload: LockedPayload) {
+        for (x,p) in payloads.enumerated() {
+            if p.key == payload.key {
+                payloads.remove(at: x)
+            }
+        }
+        self.payloads.append(payload)
     }
 
-    init?(package: ParseValue) {
-        guard let kvp = package.map else { return nil }
-
-        guard let urlString = kvp[Option.URL.rawValue]?.string else {
-            fatalError("No URL for locked package; did you forget to specify it?")
+    ///Gets or creates a payload matching the key
+    public mutating func createPayloadMatching(key: String) -> LockedPayload {
+        if let payload = self.payloadMatching(key: key) {
+            return payload
         }
-        let url = URL(string: urlString)
-        guard let usedCommitID = kvp[Option.UsedCommit.rawValue]?.string else {
-            fatalError("No commit ID for locked package; did you forget to specify it?")
+        let newPayload = LockedPayload(key: key)
+        self.payloads.append(newPayload)
+        return newPayload
+    }
+
+    public var gitPayload : LockedPayload {
+        get {
+            precondition(payloads.count == 1)
+            precondition(payloads[0].key == "git")
+            return payloads[0]  
+        }
+        set {
+            precondition(newValue.key == "git")
+            switch(payloads.count) {
+                case 1:
+                precondition(payloads[0].key == "git")
+                payloads.removeFirst()
+                payloads.append(newValue)
+                case 0:
+                payloads.append(newValue)
+                default:
+                fatalError("Not supported")
+            }
         }
 
+    }
+
+    init(url: URL, payloads: [LockedPayload]) {
         self.url = url
-        self.usedCommitID = usedCommitID
+        self.payloads = payloads
+    }
 
-        if let pinnedCommitID = kvp[Option.PinCommit.rawValue]?.string {
-            self.usedCommitID = pinnedCommitID
-            self.pinnedCommitID = pinnedCommitID
+    init(package: ParseValue) {
+        guard let kvp = package.map else {
+            fatalError("Non-map lock package")
         }
+        guard let url = kvp[Option.URL.rawValue]?.string else {
+            fatalError("No URL for package")
+        }
+        self.url = URL(string: url)
 
-        if let overrideURL = kvp[Option.OverrideURL.rawValue]?.string {
-            self.overrideURL = overrideURL
+        guard let payloads = kvp[Option.Payloads.rawValue]?.vector else {
+            fatalError("No payloads for package")
+        }
+        self.payloads = []
+        for payload in payloads {
+            let lockedPayload = LockedPayload(payload: payload)!
+            self.payloads.append(lockedPayload)
         }
     }
 
     func serialize() -> [String] {
         var result = [String]()
-
         result.append("{")
         result.append("  :\(Option.URL.rawValue) \"\(self.url)\"")
-        result.append("  :\(Option.UsedCommit.rawValue) \"\(self.usedCommitID)\"")
-
-        if let pinnedCommitID = self.pinnedCommitID {
-            result.append("  :\(Option.PinCommit.rawValue) \"\(pinnedCommitID)\"")
+        result.append("  :\(Option.Payloads.rawValue) [")
+        for payload in payloads {
+            result.append(contentsOf: payload.serialize())
         }
-
-        if let overrideURL = self.overrideURL {
-            result.append("  :\(Option.OverrideURL.rawValue) \"\(overrideURL)\"")
-        }
+        result.append("  ]")
         result.append("}")
         return result
+    }
+
+    public enum Option: String {
+        case URL = "url"
+        case Payloads = "payloads"
     }
 }
 
@@ -100,6 +124,128 @@ public func == (lhs: LockedPackage, rhs: LockedPackage) -> Bool {
 extension LockedPackage: Hashable {
      public var hashValue: Int {
         return self.url.hashValue
+     }
+}
+
+public struct LockedPayload {
+    public let key: String
+    internal(set) public var usedCommitID: String?  = nil
+    internal(set) public var pinned: Bool? = false
+    internal(set) public var overrideURL:String?     = nil
+
+    ///For manifest-based packages, the URL we chose inside the manifest
+    internal(set) public var usedURL: String?        = nil
+    ///For manifest-based packages, the channel we loaded
+    internal(set) public var usedVersion: String?    = nil
+    ///For manifest-based packages, the shasum of the tarball
+    internal(set) public var shaSum: String?         = nil
+
+    public enum Option: String {
+        case Key = "key"
+        case UsedCommit = "used-commit"
+        case Pin = "pin"
+        case OverrideURL = "override-url"
+        case UsedURL = "used-url"
+        case UsedVersion = "used-version"
+        case ShaSum = "sha-sum"
+
+
+        public static var allOptions: [Option] {
+            return [
+                    Key,
+                    UsedCommit,
+                    Pin,
+                    OverrideURL,
+                    UsedURL,
+                    UsedVersion,
+                    ShaSum
+            ]
+        }
+    }
+
+    init(key: String) {
+        self.key = key
+    }
+
+    init?(payload: ParseValue) {
+
+
+        guard let kvp = payload.map else { return nil }
+
+        guard let key = kvp[Option.Key.rawValue]?.string else {
+            fatalError("No key for locked package")
+        }
+        self.key = key
+
+
+        if let usedCommitID = kvp[Option.UsedCommit.rawValue]?.string {
+            self.usedCommitID = usedCommitID
+        }
+
+
+        if let pinned = kvp[Option.Pin.rawValue]?.bool {
+            self.pinned = pinned
+        }
+
+        if let overrideURL = kvp[Option.OverrideURL.rawValue]?.string {
+            self.overrideURL = overrideURL
+        }
+
+        if let usedURL = kvp[Option.UsedURL.rawValue]?.string {
+            self.usedURL = usedURL
+        }
+
+        if let usedVersion = kvp[Option.UsedVersion.rawValue]?.string {
+            self.usedVersion = usedVersion
+        }
+
+        if let shaSum = kvp[Option.ShaSum.rawValue]?.string {
+            self.shaSum = shaSum
+        }
+
+    }
+
+    func serialize() -> [String] {
+        var result = [String]()
+
+        result.append("{")
+        result.append("  :\(Option.Key.rawValue) \"\(self.key)\"")
+
+        if let usedCommitID = self.usedCommitID {
+            result.append("  :\(Option.UsedCommit.rawValue) \"\(usedCommitID)\"")
+        }
+
+        if let pinned = self.pinned {
+            result.append("  :\(Option.Pin.rawValue) \(pinned)")
+        }
+
+        if let overrideURL = self.overrideURL {
+            result.append("  :\(Option.OverrideURL.rawValue) \"\(overrideURL)\"")
+        }
+
+        if let usedURL = self.usedURL {
+            result.append("  :\(Option.UsedURL.rawValue) \"\(usedURL)\"")
+        }
+
+        if let usedVersion = self.usedVersion {
+            result.append("  :\(Option.UsedVersion.rawValue) \"\(usedVersion)\"")
+        }
+        if let shaSum = self.shaSum {
+            result.append("  :\(Option.ShaSum.rawValue) \"\(shaSum)\"")
+        }
+
+        result.append("}")
+        return result
+    }
+}
+
+public func == (lhs: LockedPayload, rhs: LockedPayload) -> Bool {
+    return lhs.key == rhs.key
+}
+
+extension LockedPayload: Hashable {
+     public var hashValue: Int {
+        return self.key.hashValue
      }
 }
 
@@ -139,9 +285,8 @@ final public class LockFile {
                 throw LockFileError.NonVectorImport
             }
             for package in packages {
-                if let lockedPackage = LockedPackage(package: package) {
-                    self.packages.append(lockedPackage)
-                }
+                let lockedPackage = LockedPackage(package: package)
+                self.packages.append(lockedPackage)
             }
         }
     }
@@ -185,7 +330,7 @@ final public class LockFile {
     public func serialize() -> String {
         var result = ";; Anarchy Tools Package Manager lock file\n;;\n"
 
-        result += ";; If you want to pin a package to a git commit add a ':pin-commit'\n"
+        result += ";; If you want to pin a package to a git commit add a ':pin'\n"
         result += ";; line to that package definition. This will override all version\n"
         result += ";; information the build files specify.\n;;\n"
 
