@@ -22,7 +22,7 @@ enum LockFileError: ErrorProtocol {
 }
 
 public struct LockedPackage {
-    public let url: URL
+    public let url: String
     var payloads: [LockedPayload]
 
     ///Gets a payload matching the key
@@ -74,7 +74,7 @@ public struct LockedPackage {
 
     }
 
-    init(url: URL, payloads: [LockedPayload]) {
+    init(url: String, payloads: [LockedPayload]) {
         self.url = url
         self.payloads = payloads
     }
@@ -86,7 +86,7 @@ public struct LockedPackage {
         guard let url = kvp[Option.URL.rawValue]?.string else {
             fatalError("No URL for package")
         }
-        self.url = URL(string: url)
+        self.url = url
 
         guard let payloads = kvp[Option.Payloads.rawValue]?.vector else {
             fatalError("No payloads for package")
@@ -294,7 +294,7 @@ final public class LockFile {
     public init() {
     }
 
-    public subscript(url: URL) -> LockedPackage? {
+    public subscript(url: String) -> LockedPackage? {
         get {
             for lock in self.packages {
                 if lock.url == url {

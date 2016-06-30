@@ -19,7 +19,7 @@ func ==(lhs:ExternalDependency.VersioningMethod, rhs: ExternalDependency.Version
 //
 // Returns `nil` if everything was ok
 func validateVersions(packages: [ExternalDependency]) -> [String:[ExternalDependency.VersioningMethod]]? {
-	var grouped = [URL:[ExternalDependency]]()
+	var grouped = [String:[ExternalDependency]]()
 	for p in packages {
 		if grouped[p.url] == nil {
 			grouped[p.url] = [ExternalDependency]()

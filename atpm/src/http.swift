@@ -43,14 +43,14 @@ func calculateManifestPath(_ pkg: ExternalDependency) throws {
 
 func fetchHTTPManifestOnly(_ pkg: ExternalDependency, update: Bool = false) throws -> Package {
     //calculate a safe path to store the manifest
-    let manifestName = pkg.url.description.replacing(searchTerm: "/", replacement: "-").replacing(searchTerm: ":", replacement: "-")
+    let manifestName = pkg.url.replacing(searchTerm: "/", replacement: "-").replacing(searchTerm: ":", replacement: "-")
     let manifestPath = Path("external/\(manifestName)")
 
     if FS.fileExists(path: manifestPath) && !update {
         print("Manifest already exists; uses update to update")
     }
     else {
-        try fetch(url: pkg.url, to: manifestPath)
+        try fetch(url: URL(string: pkg.url), to: manifestPath)
     }
 
     let parsedManifest = try Package(filepath: manifestPath, overlay: [], focusOnTask: nil)
