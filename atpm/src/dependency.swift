@@ -64,6 +64,7 @@ func fetchDependency(_ pkg: ExternalDependency, lock: LockedPackage?) throws {
 
     //note that this check only works for git dependencies – 
     //binary dependencies names are defined in the manifest
+    //additionally, this does not segregate by "channels" as would be needed for that case
     if let name = pkg.name {
         if FS.fileExists(path: Path("external/\(name)")) {
             print("Already downloaded")

@@ -101,7 +101,7 @@ func fetch(_ package: Package, lock: LockFile?) -> [ExternalDependency] {
             }
             
         } catch {
-            print("ERROR: Could not fetch \(pkg.name!): \(error)")
+            print("ERROR: Could not fetch \(pkg.url): \(error)")
             exit(1)
         }
     }
@@ -276,7 +276,6 @@ func writeLockFile(_ packages: [ExternalDependency], lock: LockFile?) {
                 lockedPackage.payloads = []
                 for payload in info.channels {
                     lockedPackage.payloads.append(payload.lockedPayload)
-                    print("appending \(payload)")
                 }
             }
 
