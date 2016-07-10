@@ -112,7 +112,7 @@ func update(_ package: Package, lock: LockFile?) -> [ExternalDependency] {
     var packages = [ExternalDependency]()
 
     for pkg in package.externals {
-        print("Updating external dependency \(pkg.name)...")
+        print("Updating external dependency \(pkg.name ?? pkg.url)...")
         do {
             try updateDependency(pkg, lock: lock?[pkg.url])
 
