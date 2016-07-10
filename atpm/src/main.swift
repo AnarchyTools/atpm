@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-let version = "1.0.0-GM1"
+let version = "1.1"
 
 import atfoundation
 import atpkg
