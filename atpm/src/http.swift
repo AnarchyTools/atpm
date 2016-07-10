@@ -110,7 +110,15 @@ func fetchHTTPDependency(_ pkg:ExternalDependency,lock: LockedPackage?, update: 
         
         let binaryVersion = parsedChannel.versions.filter({$0.version == versionToLoad.description}).first!
         print("Fetching \(binaryVersion.url)")
-        let tarballPath = packagePath.appending("\(binaryVersion.url.path.basename())")
+
+        //A single package may potentially have multiple channels
+        //these channels may have the same file (such as the same .framework for iOS or OSX)
+        //as such, we need to calculate a unique channel path to unload our tarball
+
+        let channelPath = packagePath.appending("channels").appending("\(parsedChannel.name)")
+        if !FS.fileExists(path: channelPath) { try FS.createDirectory(path: channelPath, intermediate: true) }
+
+        let tarballPath = channelPath.appending("\(binaryVersion.url.path.basename())")
         if FS.fileExists(path: tarballPath) && !update {
             print("Tarball already exists; use update to update")
         }
@@ -119,7 +127,14 @@ func fetchHTTPDependency(_ pkg:ExternalDependency,lock: LockedPackage?, update: 
         }
         if tarballPath.description.hasSuffix("tar.xz") {
             print("Expanding tarball...")
-            let result = system("tar xf \(tarballPath) -C \(packagePath)")
+            let result = system("tar xf \(tarballPath) -C \(channelPath)")
+            if result != 0 {
+                throw PMError.TarError(exitCode: result)
+            }
+        }
+        else if tarballPath.description.hasSuffix("zip") {
+            print("Expanding tarball...")
+            let result = system("unzip \(tarballPath) -d \(channelPath)")
             if result != 0 {
                 throw PMError.TarError(exitCode: result)
             }
