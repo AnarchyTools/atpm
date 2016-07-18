@@ -134,7 +134,7 @@ func fetchHTTPDependency(_ pkg:ExternalDependency,lock: LockedPackage?, update: 
         }
         else if tarballPath.description.hasSuffix("zip") {
             print("Expanding tarball...")
-            let result = system("unzip \(tarballPath) -d \(channelPath)")
+            let result = system("unzip -o \(tarballPath) -d \(channelPath)")
             if result != 0 {
                 throw PMError.TarError(exitCode: result)
             }
