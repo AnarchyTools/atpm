@@ -129,7 +129,6 @@ func fetchGitDependency(_ pkg: ExternalDependency, lock: LockedPackage?) throws 
     try updateDependency(pkg, lock: lock, firstTime: true)
 }
 func updateGitLockPackage(pkg: ExternalDependency, lockedPackage: inout LockedPackage) {
-    print("updateGL \(pkg)")
         guard let usedCommitID = getCurrentCommitID(pkg) else {
             print("ERROR: Corrupt git repository for package \(pkg.name!)")
             exit(1)
