@@ -1,4 +1,4 @@
-// Copyrhs (c) 2016 Anarchy Tools Contributors.
+// Copyright (c) 2016 Anarchy Tools Contributors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -61,7 +61,6 @@ func updateDependency(_ pkg: ExternalDependency, lock: LockedPackage?, firstTime
 
 //- returns: The name of the depency we downloaded
 func fetchDependency(_ pkg: ExternalDependency, lock: LockedPackage?) throws {
-
     //note that this check only works for git dependencies – 
     //binary dependencies names are defined in the manifest
     //additionally, this does not segregate by "channels" as would be needed for that case

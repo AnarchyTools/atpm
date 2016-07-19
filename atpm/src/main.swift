@@ -76,6 +76,10 @@ func info(_ package: Package, indent: Int = 4) -> Bool {
 func fetch(_ package: Package, lock: LockFile?) -> [ExternalDependency] {
     var packages = [ExternalDependency]()
     for pkg in package.externals {
+        guard pkg.shouldInclude else {
+            print ("Not fetching dependency \(pkg.name ?? pkg.url); to fetch, use one of \(pkg.ifIncluding)")
+            continue
+        }
         print("Fetching external dependency \(pkg.name ?? "\(pkg.url)")...")
         do {
             try fetchDependency(pkg, lock: lock?[pkg.url])
@@ -419,5 +423,5 @@ default:
     help()
 }
 
-print("Unspecified error.")
-exit(1)
+print("Nothing to do.")
+exit(0)
