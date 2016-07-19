@@ -5,15 +5,13 @@ linux:
     stage: build
     script:
         - apt-get update
-        - apt-get install --no-install-recommends xz-utils curl git ca-certificates curl -y
-        - curl -s https://packagecloud.io/install/repositories/anarchytools/AT/script.deb.sh | bash
-        - apt-get install atbuild package-deb -y
+        - apt-get install --no-install-recommends xz-utils atbuild package-deb curl -y
         - git submodule update --recursive --init
         - atbuild check
         - atbuild package --use-overlay static --configuration release
     tags:
         - autoscale-linux
-    image: drewcrawford/swift:latest
+    image: drewcrawford/buildbase:latest
     artifacts:
         paths:
             - bin/atpm-*.tar.xz
