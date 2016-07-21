@@ -17,7 +17,7 @@ private func logAndExecute(command: String) -> Int32 {
 // - v*.*.*
 // - v*.*
 func fetchVersions(_ pkg: ExternalDependency) -> [Version] {
-    let fp = popen("cd 'external/\(pkg.name!)' && git tag -l *.*.* -l *.* -l v*.*.* -l v*.*", "r")
+    let fp = popen("cd 'external/\(pkg.name!)' && git tag -l '*.*.*' -l '*.*' -l 'v*.*.*' -l 'v*.*'", "r")
     guard fp != nil else {
         return []
     }
