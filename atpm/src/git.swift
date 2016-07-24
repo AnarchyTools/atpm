@@ -52,7 +52,7 @@ func updateGitDependency(_ pkg: ExternalDependency, lock: LockedPackage?, firstT
     }
 
     // If we are pinned only checkout that commit
-    if let lock = lock where lock.gitPayload.pinned != nil {
+    if let lock = lock where lock.gitPayload.pinned == true {
         print("Package \(pkg.name!) is pinned to \(lock.gitPayload.usedCommitID!)")
         let pullResult = logAndExecute(command: "cd 'external/\(pkg.name!)' && git checkout '\(lock.gitPayload.usedCommitID!)'")
         if pullResult != 0 {

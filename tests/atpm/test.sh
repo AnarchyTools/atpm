@@ -72,6 +72,26 @@ $ATPM info
 popd
 
 #
+# not-pinned test
+#
+
+pushd "$DIR/not-pinned"
+$ATPM fetch
+cp build.useme.atlock build.atlock
+$ATPM update
+
+cd "external/dummyPackageB"
+
+COMMIT=`git rev-parse HEAD`
+
+if [ "$COMMIT" == "303b970952450f040be21f8aee26d79dd23e37db" ]; then
+    echo "Still at initial commit – Didn't update"
+    exit 1
+fi
+
+popd
+
+#
 # Simple dependency fetcher
 #
 
