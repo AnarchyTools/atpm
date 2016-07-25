@@ -8,6 +8,33 @@ ATPM="$(pwd)/.atllbuild/products/atpm"
 pwd
 
 #
+# if-including test
+#
+echo "*** If-including (selective) ***"
+
+pushd "$DIR/selective"
+
+rm -rf external
+
+$ATPM fetch
+
+if [ -d "external/dummyPackageB" ]; then
+    echo "Downloaded package even though it was optional"
+    exit 1
+fi
+
+$ATPM fetch --include test.b
+
+if [ ! -d "external/dummyPackageB" ]; then
+    echo "Didn't download package even though it was specified"
+    exit 1
+fi
+
+
+popd
+
+
+#
 # Binary dependencies test
 #
 echo "*** Binary dependencies ***"
