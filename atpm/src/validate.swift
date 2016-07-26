@@ -65,6 +65,14 @@ func validateVersions(packages: [ExternalDependency]) -> [String:[ExternalDepend
 					}
 				}
 			} else {
+
+				switch(vMethod, pkg.version) {
+					case (.Branch(let b), .Version(let t)), (.Version(let t), .Branch(let b)):
+					print("Warning: Not resolving \(b), \(t) since they are branch and tag.  You're on your own.")
+					continue
+					default:
+					break
+				}
 				// different versioning schemes don't match by definition
 				if failed[pkg.name!] == nil {
 					failed[pkg.name!] = []
