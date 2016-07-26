@@ -8,6 +8,17 @@ ATPM="$(pwd)/.atllbuild/products/atpm"
 pwd
 
 #
+# branch-tag
+#
+echo "*** branch-tag ***"
+
+pushd "$DIR/branchtag"
+rm -rf external
+rm -rf build.atlock
+$ATPM fetch
+popd
+
+#
 # if-including test
 #
 echo "*** If-including (selective) ***"
