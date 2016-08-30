@@ -112,6 +112,12 @@ class VersionTests: XCTestCase {
         XCTAssert(v2 > v1)
     }
 
+    func testB1B2() throws {
+        let v1 = Version(string: "0.2-beta1")
+        let v2 = Version(string: "0.2-beta2")
+        XCTAssert(v2 > v1)
+    }
+
 
     func testSmaller1() throws {
     	let v1 = Version(string: "1.2")
@@ -170,6 +176,8 @@ extension VersionTests {
             ("testGreater2", testGreater2),
             ("testGreater4", testGreater4),
             ("testGreater3", testGreater3),
+
+            ("testB1B2", testB1B2),
 
             ("testSmaller1", testSmaller1),
             ("testSmaller2", testSmaller2),
