@@ -1,4 +1,4 @@
-public enum PMError: ErrorProtocol, CustomStringConvertible {
+public enum PMError: Error, CustomStringConvertible {
 	case GitError(exitCode: Int32)
 	case MissingPackageCheckout
 	case InvalidVersion

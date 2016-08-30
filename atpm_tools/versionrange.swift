@@ -6,7 +6,7 @@ public class VersionRange {
 	public var max: Version?
 	public var maxInclusive: Bool?
 
-	public enum Error: ErrorProtocol {
+	public enum VersionError: Error {
 		case CombiningFailed
 	}
 
@@ -31,7 +31,7 @@ public class VersionRange {
 			}
 			if self.max != nil {
 				if tmp > self.max! || (self.maxInclusive == false && tmp == self.max!) {
-					throw VersionRange.Error.CombiningFailed
+					throw VersionRange.VersionError.CombiningFailed
 				}
 			}
 			self.min = tmp
@@ -45,7 +45,7 @@ public class VersionRange {
 			}
 			if self.max != nil {
 				if tmp >= self.max! {
-					throw VersionRange.Error.CombiningFailed
+					throw VersionRange.VersionError.CombiningFailed
 				}
 			}
 			self.min = tmp
@@ -59,7 +59,7 @@ public class VersionRange {
 			}
 			if self.min != nil {
 				if tmp < self.min! || (self.minInclusive == false && tmp == self.min!) {
-					throw VersionRange.Error.CombiningFailed
+					throw VersionRange.VersionError.CombiningFailed
 				}
 			}
 			self.max = tmp
@@ -73,7 +73,7 @@ public class VersionRange {
 			}
 			if self.min != nil {
 				if tmp <= self.min! {
-					throw VersionRange.Error.CombiningFailed
+					throw VersionRange.VersionError.CombiningFailed
 				}
 			}
 			self.max = tmp
@@ -82,12 +82,12 @@ public class VersionRange {
             let tmp = Version(string: versionString.subString(fromIndex: versionString.index(versionString.startIndex, offsetBy:2)))
             if self.max != nil {
             	if tmp > self.max! {
-					throw VersionRange.Error.CombiningFailed
+					throw VersionRange.VersionError.CombiningFailed
             	}
             }
             if self.min != nil {
             	if tmp < self.min! {
-            		throw VersionRange.Error.CombiningFailed
+            		throw VersionRange.VersionError.CombiningFailed
             	}
             }
             self.max = tmp
@@ -98,12 +98,12 @@ public class VersionRange {
             let tmp = Version(string: versionString)
             if self.max != nil {
             	if tmp > self.max! {
-					throw VersionRange.Error.CombiningFailed
+					throw VersionRange.VersionError.CombiningFailed
             	}
             }
             if self.min != nil {
             	if tmp < self.min! {
-            		throw VersionRange.Error.CombiningFailed
+            		throw VersionRange.VersionError.CombiningFailed
             	}
             }
             self.max = tmp
@@ -141,7 +141,7 @@ public class VersionRange {
 
 extension VersionRange: CustomStringConvertible {
 	public var description: String {
-		if let min = self.min, max = self.max where min == max {
+		if let min = self.min, let max = self.max, min == max {
 			return "==\(min)"
 		} else {
 			var result = ""

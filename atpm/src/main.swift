@@ -42,7 +42,7 @@ func loadLockFile() -> LockFile? {
 
 // MARK: - Command handling
 
-func info(_ package: Package, indent: Int = 4) -> Bool {
+func info(_ package: Package, indent: Int = 4) {
     for dep in package.externals {
         var out = ""
         for _ in 0..<indent {
@@ -70,7 +70,6 @@ func info(_ package: Package, indent: Int = 4) -> Bool {
         }
         
     }
-    return true
 }
 
 func fetch(_ package: Package, lock: LockFile?) -> [ExternalDependency] {
@@ -195,7 +194,7 @@ func pinStatus(_ package: Package, lock: LockFile?, name: String, pinned: Bool) 
     for pkg in packages {
         //manifest packages need to be fetched so as to resolve their names
         if pkg.dependencyType == .Manifest {
-            try! fetchHTTPManifestOnly(pkg)
+            let _ = try! fetchHTTPManifestOnly(pkg)
         }
         if var (payload, package) = packageMatches(lockFile: lockFile, package: pkg, name: name) {
             if pinned {
@@ -332,7 +331,7 @@ func help() {
 }
 
 //usage message
-if Process.arguments.contains("--help") {
+if CommandLine.arguments.contains("--help") {
     help()
     exit(0)
 }
@@ -342,17 +341,16 @@ if Process.arguments.contains("--help") {
 let package = loadPackageFile()
 let lockFile = loadLockFile()
 
-guard Process.arguments.count > 1 else {
+guard CommandLine.arguments.count > 1 else {
     help()
     exit(1)
 }
 
-switch Process.arguments[1] {
+switch CommandLine.arguments[1] {
 case "info":
     print("Dependencies:")
-    if info(package) {
-        exit(0)
-    }
+    info(package)
+    exit(0)
 case "fetch":
     let packages = fetch(package, lock: lockFile)
     if packages.count > 0 {
@@ -380,8 +378,8 @@ case "update":
         exit(0)
     }
 case "pin":
-    if Process.arguments.count == 3 {
-        let packages = pinStatus(package, lock: lockFile, name: Process.arguments[2], pinned: true)
+    if CommandLine.arguments.count == 3 {
+        let packages = pinStatus(package, lock: lockFile, name: CommandLine.arguments[2], pinned: true)
         if packages.count > 0 {
             writeLockFile(packages, lock: lockFile)
         }
@@ -390,8 +388,8 @@ case "pin":
         print("Usage: atpm pin <package-name>")
     }
 case "unpin":
-    if Process.arguments.count == 3 {
-        let packages = pinStatus(package, lock: lockFile, name: Process.arguments[2], pinned: false)
+    if CommandLine.arguments.count == 3 {
+        let packages = pinStatus(package, lock: lockFile, name: CommandLine.arguments[2], pinned: false)
         if packages.count > 0 {
             writeLockFile(packages, lock: lockFile)
         }
@@ -400,8 +398,8 @@ case "unpin":
         print("Usage: atpm pin <package-name>")
     }
 case "override":
-    if Process.arguments.count == 4 {
-        let packages = overrideURL(package, lock: lockFile, name: Process.arguments[2], newURL: Process.arguments[3])
+    if CommandLine.arguments.count == 4 {
+        let packages = overrideURL(package, lock: lockFile, name: CommandLine.arguments[2], newURL: CommandLine.arguments[3])
         if packages.count > 0 {
             writeLockFile(packages, lock: lockFile)
         }
@@ -410,8 +408,8 @@ case "override":
         print("Usage: atpm override <package-name> <overridden-url>")
     }
 case "restore":
-    if Process.arguments.count == 3 {
-        let packages = overrideURL(package, lock: lockFile, name: Process.arguments[2], newURL: nil)
+    if CommandLine.arguments.count == 3 {
+        let packages = overrideURL(package, lock: lockFile, name: CommandLine.arguments[2], newURL: nil)
         if packages.count > 0 {
             writeLockFile(packages, lock: lockFile)
         }

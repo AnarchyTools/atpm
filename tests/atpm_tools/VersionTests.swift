@@ -150,7 +150,7 @@ class VersionTests: XCTestCase {
 }
 
 extension VersionTests {
-    static var allTests : [(String, VersionTests -> () throws -> Void)] {
+    static var allTests : [(String, (VersionTests) -> () throws -> Void)] {
         return [
             ("testParse1", testParse1),
             ("testParse2", testParse2),

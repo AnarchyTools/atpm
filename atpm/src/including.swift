@@ -27,9 +27,9 @@ extension ExternalDependency {
 
 ///determine if the user passed --include foo
 private func cliIncludes(string: String) -> Bool {
-    for (x,arg) in Process.arguments.enumerated() {
+    for (x,arg) in CommandLine.arguments.enumerated() {
         if arg == "--include" {
-            if Process.arguments[x+1] == string {
+            if CommandLine.arguments[x+1] == string {
                 return true
             }
         }

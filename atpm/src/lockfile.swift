@@ -15,7 +15,7 @@
 import atfoundation
 import atpkg
 
-enum LockFileError: ErrorProtocol {
+enum LockFileError: Error {
     case NonVectorImport
     case ParserFailed
     case NonLockFile

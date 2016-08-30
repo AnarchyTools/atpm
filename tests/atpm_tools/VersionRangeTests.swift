@@ -198,7 +198,7 @@ class VersionRangeTests: XCTestCase {
 }
 
 extension VersionRangeTests {
-    static var allTests : [(String, VersionRangeTests -> () throws -> Void)] {
+    static var allTests : [(String, (VersionRangeTests) -> () throws -> Void)] {
         return [
             ("testInitSimple",       testInitSimple),
             ("testInitSmaller",      testInitSmaller),
