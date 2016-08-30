@@ -36,7 +36,7 @@ func chooseVersion(versions: [Version], versionRange: VersionRange, lockedPayloa
         return versionRange.versionInRange(version)
     }
 
-    versions.sort(isOrderedBefore: { (v1, v2) -> Bool in
+    versions.sort(by: { (v1, v2) -> Bool in
         return v1 < v2
     })
 

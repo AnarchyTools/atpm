@@ -1,10 +1,30 @@
+// Copyright (c) 2016 Anarchy Tools Contributors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 import atfoundation
 import atpkg
 import atpm_tools
 
+#if os(OSX)
+import Darwin
+#else
+import Glibc
+#endif
+
 private func logAndExecute(command: String) -> Int32 {
     // print("Executing: \(command)")
-    let exitCode = system(command)
+    let exitCode = anarchySystem(command, environment:[:])
     // print("Exit code: \(exitCode)")
     return exitCode
 }
@@ -17,23 +37,14 @@ private func logAndExecute(command: String) -> Int32 {
 // - v*.*.*
 // - v*.*
 func fetchVersions(_ pkg: ExternalDependency) -> [Version] {
-    let fp = popen("cd 'external/\(pkg.name!)' && git tag -l '*.*.*' -l '*.*' -l 'v*.*.*' -l 'v*.*'", "r")
-    guard fp != nil else {
-        return []
+    var output = ""
+    let fp = anarchySystem("cd 'external/\(pkg.name!)' && git tag -l '*.*.*' -l '*.*' -l 'v*.*.*' -l 'v*.*'", environment: [:], redirectOutput: &output)
+    if fp != 0 {
+        fatalError("Error \(fp)")
     }
-    defer {
-        pclose(fp)
-    }
-
-    var versions = [Version]()
-    var buffer = [CChar](repeating: 0, count: 255)
-    while feof(fp) == 0 {
-        if fgets(&buffer, 255, fp) == nil {
-            break
-        }
-        if let versionString = String(validatingUTF8: buffer) {
-            versions.append(Version(string: versionString))
-        }
+    var versions: [Version] = []
+    for line in output.split(character: "\n") {
+        versions.append(Version(string: line))
     }
     return versions
 }
@@ -52,7 +63,7 @@ func updateGitDependency(_ pkg: ExternalDependency, lock: LockedPackage?, firstT
     }
 
     // If we are pinned only checkout that commit
-    if let lock = lock where lock.gitPayload.pinned == true {
+    if let lock = lock, lock.gitPayload.pinned == true {
         print("Package \(pkg.name!) is pinned to \(lock.gitPayload.usedCommitID!)")
         let pullResult = logAndExecute(command: "cd 'external/\(pkg.name!)' && git checkout '\(lock.gitPayload.usedCommitID!)'")
         if pullResult != 0 {
@@ -62,7 +73,7 @@ func updateGitDependency(_ pkg: ExternalDependency, lock: LockedPackage?, firstT
     }
 
     // on first time checkout only pull the commit that has been logged in the lockfile
-    if let lock = lock where firstTime == true {
+    if let lock = lock, firstTime == true {
         print("Fetching commit as defined in lock file for \(pkg.name!): \(lock.gitPayload.usedCommitID!)")
         let pullResult = logAndExecute(command: "cd 'external/\(pkg.name!)' && git checkout '\(lock.gitPayload.usedCommitID!)'")
         if pullResult != 0 {
@@ -112,7 +123,7 @@ func updateGitDependency(_ pkg: ExternalDependency, lock: LockedPackage?, firstT
 func fetchGitDependency(_ pkg: ExternalDependency, lock: LockedPackage?) throws {
 
     // If the url has been overridden checkout that repo instead
-    if let lock = lock where lock.gitPayload.overrideURL != nil {
+    if let lock = lock, lock.gitPayload.overrideURL != nil {
         print("Package \(pkg.name!) repo URL overridden: \(lock.gitPayload.overrideURL!)")
         let cloneResult = logAndExecute(command: "git clone --recurse-submodules '\(lock.gitPayload.overrideURL!)' 'external/\(pkg.name!)'")
         if cloneResult != 0 {
@@ -139,21 +150,10 @@ func getCurrentCommitID(_ pkg: ExternalDependency) -> String? {
     if !FS.fileExists(path: Path("external/\(pkg.name!)")) {
         return nil
     }
-    let fp = popen("cd 'external/\(pkg.name!)' && git rev-parse HEAD", "r")
-    guard fp != nil else {
-        return nil
+    var commitID = ""
+    let rc = anarchySystem("cd 'external/\(pkg.name!)' && git rev-parse HEAD", environment: [:], redirectOutput: &commitID)
+    if rc != 0 {
+        fatalError("Bad return code \(rc)")
     }
-    defer {
-        pclose(fp)
-    }
-    var buffer = [CChar](repeating: 0, count: 255)
-    while feof(fp) == 0 {
-        if fgets(&buffer, 255, fp) == nil {
-            break
-        }
-        if let commitID = String(validatingUTF8: buffer) {
-            return commitID.subString(toIndex: commitID.index(commitID.startIndex, offsetBy: commitID.characters.count - 1))
-        }
-    }
-    return nil
+    return commitID.subString(toIndex: commitID.index(commitID.startIndex, offsetBy: commitID.characters.count - 1))
 }

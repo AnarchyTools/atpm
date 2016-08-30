@@ -31,7 +31,7 @@ struct HTTPDependencyChannel {
 ///The world's most terrible HTTP implementation
 private func fetch(url: URL, to file: Path) throws {
     if url.schema != "https" { throw PMError.InsecurePackage }
-    let curlResult = system("curl -sL -o '\(file)' '\(url)'")
+    let curlResult = anarchySystem("curl -sL -o '\(file)' '\(url)'", environment: [:])
     if curlResult != 0 {
         throw PMError.HTTPSTransportError(exitCode: curlResult)
     }
@@ -127,14 +127,14 @@ func fetchHTTPDependency(_ pkg:ExternalDependency,lock: LockedPackage?, update: 
         }
         if tarballPath.description.hasSuffix("tar.xz") {
             print("Expanding tarball...")
-            let result = system("tar xf \(tarballPath) -C \(channelPath)")
+            let result = anarchySystem("tar xf \(tarballPath) -C \(channelPath)", environment:[:])
             if result != 0 {
                 throw PMError.TarError(exitCode: result)
             }
         }
         else if tarballPath.description.hasSuffix("zip") {
             print("Expanding tarball...")
-            let result = system("unzip -o \(tarballPath) -d \(channelPath)")
+            let result = anarchySystem("unzip -o \(tarballPath) -d \(channelPath)",environment:[:])
             if result != 0 {
                 throw PMError.TarError(exitCode: result)
             }
@@ -159,23 +159,12 @@ private func getSHASum(path: Path) -> String {
     #elseif os(Linux)
     let cmd = "sha256sum -b \(path) | cut -d ' ' -f 1 "
     #endif
-    let fp = popen(cmd, "r")
-    guard fp != nil else {
-        fatalError("fp is nil")
+    var shasum = ""
+    let rc = anarchySystem(cmd, environment: [:], redirectOutput: &shasum)
+    if rc != 0 {
+        fatalError("Bad return code \(rc)")
     }
-    defer {
-        pclose(fp)
-    }
-    var buffer = [CChar](repeating: 0, count: 255)
-    while feof(fp) == 0 {
-        if fgets(&buffer, 255, fp) == nil {
-            break
-        }
-        if let shasum = String(validatingUTF8: buffer) {
-            //chop off \n
-            return String(shasum.characters[shasum.characters.startIndex..<shasum.characters.index(before: shasum.characters.endIndex)])
-        }
-    }
-    fatalError("Could not calculate shasum for \(path)")
+    //chop off \n
+    return String(shasum.characters[shasum.characters.startIndex..<shasum.characters.index(before: shasum.characters.endIndex)])
 }
 
