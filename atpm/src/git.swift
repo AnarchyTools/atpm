@@ -49,10 +49,13 @@ func fetchVersions(_ pkg: ExternalDependency) -> [Version] {
     return versions
 }
 
+private var updatedRecently: [ExternalDependency] = []
+
 // Update an already checked out repository
 //
 // Returns `false` if repo does not exist or if a `git fetch origin` fails
 func updateGitDependency(_ pkg: ExternalDependency, lock: LockedPackage?, firstTime: Bool = false) throws {
+    if updatedRecently.filter({$0.url == pkg.url}).count>0 { return }
     if !FS.fileExists(path: Path("external/\(pkg.name!)")) {
         throw PMError.MissingPackageCheckout
     }
@@ -114,6 +117,8 @@ func updateGitDependency(_ pkg: ExternalDependency, lock: LockedPackage?, firstT
                 throw PMError.GitError(exitCode: pullResult)
         }
     }
+
+    updatedRecently.append(pkg)
 }
 
 // Checkout a git repository and all its submodules
