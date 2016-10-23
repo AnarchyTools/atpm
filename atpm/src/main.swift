@@ -76,7 +76,7 @@ func fetch(_ package: Package, lock: LockFile?) -> [ExternalDependency] {
     var packages = [ExternalDependency]()
     for pkg in package.externals {
         guard pkg.shouldInclude else {
-            print ("Not fetching dependency \(pkg.name ?? pkg.url); to fetch, use one of \(pkg.ifIncluding)")
+            print ("Not fetching dependency \(pkg.name ?? pkg.url); to fetch, use one of \(pkg.ifIncluding ?? "BUG")")
             continue
         }
         print("Fetching external dependency \(pkg.name ?? "\(pkg.url)")...")
