@@ -17,7 +17,7 @@
 (package
   :name "atpm"
   :import-packages ["atpkg/build.atpkg"]
-  :version "1.2"
+  :version "1.2.1"
 
   :tasks {
     :default {
