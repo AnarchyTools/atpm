@@ -24,7 +24,7 @@ let defaultLockFile = Path("build.atlock")
 
 func loadPackageFile() -> Package {
     do {
-        return try Package(filepath: defaultBuildFile, overlay: [], focusOnTask: nil)
+        return try Package(filepath: defaultBuildFile, overlay: [], focusOnTask: nil, softFail: true)
     } catch {
         print("Unable to load build file '\(defaultBuildFile)': \(error)")
         exit(1)
