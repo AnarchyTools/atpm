@@ -55,7 +55,7 @@ func info(_ package: Package, indent: Int = 4) {
             case .Git:
             let subPackagePath = Path("external/\(dep.name)/build.atpkg")
             do {
-                let subPackage = try Package(filepath: subPackagePath, overlay: [], focusOnTask: nil)
+                let subPackage = try Package(filepath: subPackagePath, overlay: [], focusOnTask: nil, softFail: true)
                 info(subPackage, indent: indent + 4)
             } catch {
                 out = ""
@@ -91,7 +91,7 @@ func fetch(_ package: Package, lock: LockFile?) -> [ExternalDependency] {
                 let subPackagePath = Path("external/\(pkg.name!)/build.atpkg")
 
                 do {
-                    let p = try Package(filepath: subPackagePath, overlay: [], focusOnTask: nil)
+                    let p = try Package(filepath: subPackagePath, overlay: [], focusOnTask: nil, softFail: true)
                     packages.append(pkg)
                     packages += fetch(p, lock: lock)
                 } catch {
@@ -132,7 +132,7 @@ func update(_ package: Package, lock: LockFile?) -> [ExternalDependency] {
                 }
                 let subPackagePath = Path("external/\(pkg.name!)/build.atpkg")
                 do {
-                    let p = try Package(filepath: subPackagePath, overlay: [], focusOnTask: nil)
+                    let p = try Package(filepath: subPackagePath, overlay: [], focusOnTask: nil, softFail: true)
                     packages.append(pkg)
                     packages += update(p, lock: lock)
                 } catch {
@@ -223,7 +223,7 @@ func overrideURL(_ package: Package, lock: LockFile?, name: String, newURL: Stri
     for pkg in package.externals {
         let subPackagePath = Path("external/\(pkg.name!)/build.atpkg")
         do {
-            let p = try Package(filepath: subPackagePath, overlay: [], focusOnTask: nil)
+            let p = try Package(filepath: subPackagePath, overlay: [], focusOnTask: nil, softFail: true)
             packages.append(pkg)
             packages += overrideURL(p, lock: lock, name: name, newURL: newURL)
         } catch {
