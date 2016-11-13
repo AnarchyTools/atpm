@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-let version = "1.2.3"
+let version = "1.2.4"
 
 import atfoundation
 import atpkg
